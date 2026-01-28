@@ -1,0 +1,6 @@
+id,name,budget,preferred_genres,latitude,longitude,food_preference
+U001,Alice Johnson,100.00,"Music,Technology",40.7128,-74.0060,Vegan
+U002,Bob Smith,50.00,"Food,Sports",40.7580,-73.9855,BBQ
+U003,Carol Davis,150.00,"Music,Movies",34.0522,-118.2437,Italian
+U004,David Wilson,80.00,"Technology,Sports",37.7749,-122.4194,Healthy
+U005,Eve Anderson,60.00,"Food,Music",40.6892,-74.0445,International

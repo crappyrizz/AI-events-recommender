@@ -1,0 +1,11 @@
+id,name,genre,ticket_price,latitude,longitude,food_type,date,description
+E001,Jazz Night at Blue Note,Music,45.00,40.7128,-74.0060,Cocktails,2024-02-15,Live jazz performance featuring local artists
+E002,Tech Conference 2024,Technology,120.00,37.7749,-122.4194,Vegan,2024-03-01,Annual tech conference with keynote speakers
+E003,Street Food Festival,Food,25.00,40.7580,-73.9855,International,2024-02-20,Street food vendors from around the world
+E004,Marathon City Run,Sports,35.00,40.7282,-73.7949,Healthy,2024-03-10,Annual city marathon event
+E005,Classical Music Gala,Music,85.00,40.7306,-73.9352,French Cuisine,2024-02-28,Symphony orchestra performance
+E006,Indie Film Festival,Movies,20.00,34.0522,-118.2437,Popcorn,2024-03-15,Showcase of independent films
+E007,Startup Networking Mixer,Technology,50.00,37.3382,-121.8863,Snacks,2024-02-22,Networking event for startup founders
+E008,Outdoor Cooking Class,Food,55.00,40.6892,-74.0445,BBQ,2024-03-05,Learn grilling techniques from professional chefs
+E009,Rock Concert Series,Music,65.00,41.8781,-87.6298,Pizza,2024-03-08,Top rock bands performing live
+E010,Science Exhibition,Technology,30.00,42.3601,-71.0589,Vegan,2024-02-25,Interactive science demonstrations and exhibits
