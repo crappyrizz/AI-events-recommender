@@ -50,10 +50,12 @@ class EventRecommender:
     def recommend(
         self,
         user_preferences: dict,
-        top_n: int = 10
+        top_n: int = 10,
+        max_distance_km: float = None
     ) -> List[Dict]:
         """
         Recommend events based on user preferences.
+        Results are sorted by relevance score and distance (closest first).
         
         Args:
             user_preferences: User preferences including:
@@ -63,16 +65,32 @@ class EventRecommender:
                 - longitude: float
                 - food_preference: str
             top_n: Number of top recommendations to return (default: 10)
+            max_distance_km: Maximum distance filter in km (optional, None = no limit)
         
         Returns:
             List of recommended events with:
                 - event data
                 - relevance_score
+                - distance_km
                 - explanation (top 2-3 contributing factors)
         """
+        from app.utils.distance import haversine_distance
+        
         recommendations = []
         
         for event in self.events:
+            # Calculate distance
+            distance = haversine_distance(
+                user_preferences['latitude'],
+                user_preferences['longitude'],
+                event['latitude'],
+                event['longitude']
+            )
+            
+            # Apply distance filter if specified
+            if max_distance_km is not None and distance > max_distance_km:
+                continue
+            
             relevance_score, score_breakdown = self.scoring_engine.calculate_relevance_score(
                 event,
                 user_preferences
@@ -85,13 +103,16 @@ class EventRecommender:
                 recommendation = {
                     'event': event,
                     'relevance_score': round(relevance_score, 3),
+                    'distance_km': round(distance, 1),
                     'explanation': explanation,
                     'score_breakdown': score_breakdown
                 }
                 recommendations.append(recommendation)
         
-        # Sort by relevance score (descending)
-        recommendations.sort(key=lambda x: x['relevance_score'], reverse=True)
+        # Sort by relevance score (descending), then by distance (ascending - closest first)
+        recommendations.sort(
+            key=lambda x: (-x['relevance_score'], x['distance_km'])
+        )
         
         return recommendations[:top_n]
     

@@ -82,10 +82,11 @@ def test_recommendation_engine():
             for rank, rec in enumerate(recommendations, 1):
                 event = rec['event']
                 score = rec['relevance_score']
+                distance = rec['distance_km']
                 explanation = rec['explanation']
                 
                 print(f"\n{rank}. {event['name']}")
-                print(f"   Relevance Score: {score:.3f}")
+                print(f"   Relevance Score: {score:.3f} | Distance: {distance:.1f} km")
                 print(f"   Event Details: {event['genre']} | ${event['ticket_price']:.2f} | {event['food_type']}")
                 print(f"   Date: {event['date']}")
                 print(f"   Why Recommended: {explanation}")
