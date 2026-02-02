@@ -4,7 +4,10 @@ Uses weighted scoring with budget and genre as primary factors.
 """
 
 from app.utils.distance import haversine_distance
-from app.utils.time_context import calculate_temporal_score, days_until_event
+from app.services.context.temporal import TemporalContextService
+from app.services.context.weather import WeatherContextService
+from app.services.context.crowd import CrowdContextService
+
 
 
 class ScoringEngine:
@@ -17,6 +20,8 @@ class ScoringEngine:
         "distance": 0.20,
         "food_preference": 0.15,
         "temporal": 0.10,
+        "weather": 0.08,  
+        "crowd": 0.06,
     }
 
     def calculate_relevance_score(self, event: dict, user_preferences: dict) -> tuple[float, dict]:
@@ -65,13 +70,40 @@ class ScoringEngine:
             "description": f"Food preference match: Event food '{event['food_type']}' vs preference '{user_preferences['food_preference']}'",
         }
 
-        # Temporal score
-        days_until = days_until_event(event["date"])
-        temporal_score = calculate_temporal_score(days_until)
+        # Temporal score (context - aware)
+        temporal_score = TemporalContextService.score(event["date"])
+        
         score_breakdown["temporal"] = {
             "value": temporal_score,
-            "description": f"Event timing: {days_until} days away (date: {event['date']})",
+            "description": f"Event timing relevance based on date ({event['date']})",
         }
+        
+        # weather score
+        weather_score = WeatherContextService.score(
+            event.get("event_type", "indoor")
+        )
+        score_breakdown["weather"] = {
+            "value": weather_score,
+            "description": f"Weather suitability for event type '{event.get('event_type', 'indoor')}'"
+        }
+        
+        #crowdaware score
+        crowd_level = event.get("crowd_level", "MEDIUM")
+        base_crowd_score = CrowdContextService.score(crowd_level)
+
+        if user_preferences.get("avoid_crowds"):
+            crowd_score = base_crowd_score * 0.7  # stronger penalty
+        else:
+            crowd_score = base_crowd_score
+
+        score_breakdown["crowd"] = {
+            "value": crowd_score,
+            "description": (
+                f"Crowd level impact: {crowd_level} "
+                f"(avoid crowds: {user_preferences.get('avoid_crowds', False)})"
+            )
+        }
+
 
         relevance_score = (
             budget_score * self.WEIGHTS["budget"]
@@ -79,6 +111,8 @@ class ScoringEngine:
             + distance_score * self.WEIGHTS["distance"]
             + food_score * self.WEIGHTS["food_preference"]
             + temporal_score * self.WEIGHTS["temporal"]
+            + weather_score * self.WEIGHTS["weather"]
+            + crowd_score * self.WEIGHTS["crowd"]
         )
 
         return relevance_score, score_breakdown

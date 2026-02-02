@@ -7,6 +7,13 @@ import csv
 import os
 from typing import List, Dict, Tuple
 from app.services.scoring import ScoringEngine
+from app.services.context.temporal import TemporalContextService
+from app.services.context.weather import WeatherContextService
+from app.services.context.crowd import CrowdContextService
+
+
+
+
 
 
 class EventRecommender:
@@ -23,6 +30,17 @@ class EventRecommender:
         self.scoring_engine = ScoringEngine()
         self.events = []
         self._load_events()
+    
+    def apply_crowd_modifier(score: float, crowd_level: str, avoid_crowds: bool) -> float:
+        if not avoid_crowds:
+            return score
+
+        if crowd_level == "HIGH":
+            return score * 0.6
+        elif crowd_level == "MEDIUM":
+            return score * 0.85
+        else:
+            return score * 1.05
     
     def _load_events(self) -> None:
         """Load events from CSV file."""

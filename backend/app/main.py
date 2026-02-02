@@ -1,6 +1,15 @@
 from fastapi import FastAPI
-from app.api.v1 import interactions
 
-app = FastAPI(title="AI Events Recommender")
+from app.core.database import Base, engine
+from app.models import event_interaction  # IMPORTANT (forces model import)
+
+from app.api.v1 import interactions, crowd, recommendations
+
+app = FastAPI()
+
+# THIS CREATES THE TABLES
+Base.metadata.create_all(bind=engine)
 
 app.include_router(interactions.router)
+app.include_router(crowd.router)
+app.include_router(recommendations.router)
