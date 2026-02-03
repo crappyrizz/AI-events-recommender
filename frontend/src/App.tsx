@@ -1,35 +1,43 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import PreferenceForm from "./components/PreferenceForm";
+import { getRecommendations } from "./api/recommendations";
+import type { Recommendation, UserPreferences } from "./types/recommendation";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(preferences: UserPreferences) {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getRecommendations(preferences);
+      setRecommendations(data);
+    } catch (err: any) {
+      setError(err.message || "Failed to load recommendations");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div style={{ padding: "2rem" }}>
+      <h1>AI Events Recommender</h1>
+      <p>Personalized event recommendations</p>
+
+      <PreferenceForm onSubmit={handleSubmit} />
+
+      {loading && <p>Loading recommendations…</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {recommendations.length > 0 && (
+        <pre style={{ marginTop: "2rem" }}>
+          {JSON.stringify(recommendations, null, 2)}
+        </pre>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
