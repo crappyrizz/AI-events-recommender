@@ -119,12 +119,18 @@ class EventRecommender:
                 explanation = self._generate_explanation(score_breakdown, relevance_score)
                 
                 recommendation = {
-                    'event': event,
+                    'event': {
+                        'id': event['id'],
+                        'name': event['name'],
+                        'date': event['date'],
+                        'genre': event.get('genre'),
+                    },
                     'relevance_score': round(relevance_score, 3),
                     'distance_km': round(distance, 1),
                     'explanation': explanation,
                     'score_breakdown': score_breakdown
                 }
+
                 recommendations.append(recommendation)
         
         # Sort by relevance score (descending), then by distance (ascending - closest first)

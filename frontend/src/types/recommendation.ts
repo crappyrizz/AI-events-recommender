@@ -12,9 +12,18 @@ export interface ScoreDetail {
   description: string;
 }
 
+export interface EventSummary {
+  id: number;
+  name: string;
+  date: string;
+  genre?: string;
+}
+
 export interface Recommendation {
-  event_id: number;
+  event: EventSummary;
   relevance_score: number;
+  distance_km?: number;
+  explanation?: string;
   score_breakdown: {
     budget?: ScoreDetail;
     genre?: ScoreDetail;
