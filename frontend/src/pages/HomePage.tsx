@@ -4,6 +4,8 @@ import { getRecommendations } from "../api/recommendations";
 import type { Recommendation, UserPreferences } from "../types/recommendation";
 import RecommendationCard from "../components/RecommendationCard";
 import SortControl from "../components/SortControl";
+import SkeletonCard from "../components/SkeletonCard";
+
 
 
 
@@ -64,13 +66,43 @@ export default function HomePage() {
 
       <SortControl value={sortBy} onChange={setSortBy} />
 
-      {loading && <p>Finding events that match your preferences...</p>}
+      {loading && (
+        <>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </>
+    )}
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {!loading && results.length === 0 && (
-        <p>No recommendations yet.</p>
+      {error && (
+        <div style={{ marginTop: 20, color: "#dc2626" }}>
+          <p>{error}</p>
+          <button
+            onClick={() => setError(null)}
+            style={{
+            marginTop: 8,
+            padding: "6px 12px",
+            background: "#2563EB",
+            color: "white",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+          }}
+        >
+            Try Again
+          </button>
+        </div>
       )}
+
+
+      {!loading && results.length === 0 && !error && (
+        <div style={{ marginTop: 30, textAlign: "center", color: "#6b7280" }}>
+          <h3>No events found 🎭</h3>
+          <p>Try adjusting your preferences.</p>
+        </div>
+      )}
+
 
     <div>
         {sortedResults.map((rec) => (
