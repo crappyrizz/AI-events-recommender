@@ -38,3 +38,5 @@ Estimates crowd level for an event based on interactions.
 - integrate tracking function
 - Filter distance based on current location
 - remove ridiculous suggestions
+- recommendations not interdependent
+- preferences should not allow any identifiers

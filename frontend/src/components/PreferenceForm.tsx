@@ -32,28 +32,30 @@ export default function PreferenceForm({ onSubmit }: PreferenceFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginBottom: "2rem" }}>
-      <div>
+    <form onSubmit={handleSubmit} style={{ marginBottom: "2rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+      <div style={{ gridColumn: "span 1" }}>
         <input
           type="number"
           placeholder="Budget"
           value={budget}
           onChange={(e) => setBudget(e.target.value)}
           required
+          style={{ width: "100%" }}
         />
       </div>
 
-      <div>
+      <div style={{ gridColumn: "span 1" }}>
         <input
           type="text"
           placeholder="Preferred genres (comma separated)"
           value={genres}
           onChange={(e) => setGenres(e.target.value)}
           required
+          style={{ width: "100%" }}
         />
       </div>
 
-      <div>
+      <div style={{ gridColumn: "span 1" }}>
         <input
           type="number"
           placeholder="Latitude"
@@ -61,10 +63,11 @@ export default function PreferenceForm({ onSubmit }: PreferenceFormProps) {
           onChange={(e) => setLatitude(e.target.value)}
           step="any"
           required
+          style={{ width: "100%" }}
         />
       </div>
 
-      <div>
+      <div style={{ gridColumn: "span 1" }}>
         <input
           type="number"
           placeholder="Longitude"
@@ -72,19 +75,21 @@ export default function PreferenceForm({ onSubmit }: PreferenceFormProps) {
           onChange={(e) => setLongitude(e.target.value)}
           step="any"
           required
+          style={{ width: "100%" }}
         />
       </div>
 
-      <div>
+      <div style={{ gridColumn: "span 1" }}>
         <input
           type="text"
           placeholder="Food preference"
           value={foodPreference}
           onChange={(e) => setFoodPreference(e.target.value)}
+          style={{ width: "100%" }}
         />
       </div>
 
-      <label>
+      <label style={{ gridColumn: "span 1", display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <input
           type="checkbox"
           checked={avoidCrowds}
@@ -93,8 +98,8 @@ export default function PreferenceForm({ onSubmit }: PreferenceFormProps) {
         Avoid crowds
       </label>
 
-      <div>
-        <button type="submit">Get recommendations</button>
+      <div style={{ gridColumn: "span 1" }}>
+        <button type="submit" style={{ width: "100%" }}>Get recommendations</button>
       </div>
     </form>
   );

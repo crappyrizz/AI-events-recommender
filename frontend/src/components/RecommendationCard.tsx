@@ -2,22 +2,32 @@ import ProgressBar from "./ProgressBar";
 import { matchLabel } from "./utils/scoreLabels";
 import type { Recommendation } from "../types/recommendation";
 import Badge from "./badge";
-import { budgetBadge,distanceBadge,crowdBadge,weatherBadge,} from "./utils/badges";
+import {budgetBadge, distanceBadge, crowdBadge, weatherBadge,} from "./utils/badges";
 import { useState } from "react";
-
-
+import { sendInteraction } from "../api/interactions";
 
 interface Props {
   recommendation: Recommendation;
 }
+
+const USER_ID = 1;
 
 export default function RecommendationCard({ recommendation }: Props) {
   const { event, relevance_score, score_breakdown } = recommendation;
   const [expanded, setExpanded] = useState(false);
   const match = matchLabel(relevance_score);
 
+  // ✅ Handlers INSIDE component
+  async function markInterested() {
+    await sendInteraction(USER_ID, event.id, "INTERESTED");
+  }
+
+  async function markNotInterested() {
+    await sendInteraction(USER_ID, event.id, "NOT_INTERESTED");
+  }
+
   return (
-    <div
+    <article
       style={{
         background: "#ffffff",
         borderRadius: 12,
@@ -26,7 +36,7 @@ export default function RecommendationCard({ recommendation }: Props) {
         border: "1px solid #e5e7eb",
       }}
     >
-      {/* COMPACT HEADER */}
+      {/* HEADER */}
       <div>
         <h3 style={{ marginBottom: 4, color: "#111827" }}>
           {event.name}
@@ -37,6 +47,7 @@ export default function RecommendationCard({ recommendation }: Props) {
         </div>
       </div>
 
+      {/* MATCH */}
       <div style={{ marginTop: 12 }}>
         <strong style={{ color: match.color }}>
           {match.label}
@@ -47,8 +58,16 @@ export default function RecommendationCard({ recommendation }: Props) {
         </div>
       </div>
 
+      {/* COMPACT BADGES */}
       {!expanded && (
-        <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap" }}>
+        <div
+          style={{
+            marginTop: 12,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
           {score_breakdown.budget && (() => {
             const b = budgetBadge(score_breakdown.budget.value);
             return <Badge text={`💵 Budget: ${b.label}`} color={b.color} />;
@@ -71,8 +90,41 @@ export default function RecommendationCard({ recommendation }: Props) {
         </div>
       )}
 
+      {/* INTERACTIONS */}
+      <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
+        <button
+          onClick={markInterested}
+          style={{
+            padding: "8px 14px",
+            background: "#10b981",
+            color: "white",
+            borderRadius: 8,
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          👍 Interested
+        </button>
+
+        <button
+          onClick={markNotInterested}
+          style={{
+            padding: "8px 14px",
+            background: "#ef4444",
+            color: "white",
+            borderRadius: 8,
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          👎 Not Interested
+        </button>
+      </div>
+
+      {/* TOGGLE */}
       <button
         onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
         style={{
           marginTop: 12,
           background: "none",
@@ -88,48 +140,23 @@ export default function RecommendationCard({ recommendation }: Props) {
 
       {/* DETAILS */}
       {expanded && (
-        
-        <div style={{ marginTop: 16, paddingTop: 16, borderTop: "5px solid #e5e7eb", color: "#374151"  }}>
-          {/* BADGES */}
-          <div style={{ marginBottom: 12, display: "flex", flexWrap: "wrap" }}>
-            {score_breakdown.budget && (() => {
-              const b = budgetBadge(score_breakdown.budget.value);
-              return <Badge text={`💵 Budget: ${b.label}`} color={b.color} />;
-            })()}
-
-            {score_breakdown.distance && (() => {
-              const d = distanceBadge(score_breakdown.distance.value);
-              return <Badge text={`📍 Distance: ${d.label}`} color={d.color} />;
-            })()}
-
-            {score_breakdown.crowd && (() => {
-              const c = crowdBadge(score_breakdown.crowd.value);
-              return <Badge text={`👥 Crowd: ${c.label}`} color={c.color} />;
-            })()}
-
-            {score_breakdown.weather && (() => {
-              const w = weatherBadge(score_breakdown.weather.value);
-              return <Badge text={`☀️ Weather: ${w.label}`} color={w.color} />;
-            })()}
-          </div>
-
-          {/* WHY THIS MATCHES */}
-          <div>
-            {Object.entries(score_breakdown).map(([key, detail]) => (
-              <div key={key} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 13, marginBottom: 4, color: "#6b7280" }}>
-                  <strong>{key}</strong>
-                </div>
-                <ProgressBar value={detail.value} />
+        <div
+          style={{
+            marginTop: 16,
+            paddingTop: 16,
+            borderTop: "1px solid #e5e7eb",
+          }}
+        >
+          {Object.entries(score_breakdown).map(([key, detail]) => (
+            <div key={key} style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 13, marginBottom: 4, color: "#6b7280" }}>
+                <strong>{key}</strong>
               </div>
-            ))}
-          </div>
+              <ProgressBar value={detail.value} />
+            </div>
+          ))}
         </div>
       )}
-    </div>
-
-    
-
-
+    </article>
   );
 }

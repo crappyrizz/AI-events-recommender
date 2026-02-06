@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PreferenceForm from "../components/PreferenceForm";
-import { getRecommendations } from "../api/recommendations";
+import { getRecommendations, ApiError } from "../api/recommendations";
 import type { Recommendation, UserPreferences } from "../types/recommendation";
 import RecommendationCard from "../components/RecommendationCard";
 import SortControl from "../components/SortControl";
 import SkeletonCard from "../components/SkeletonCard";
+import type { SortOption } from "../types/sorting";
+import { errorMessageFor } from "../utils/errorMessages";
+import type { ErrorType } from "../utils/errorMessages";
 
 
 
@@ -13,54 +16,56 @@ import SkeletonCard from "../components/SkeletonCard";
 export default function HomePage() {
   const [results, setResults] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<
-  "best" | "budget" | "distance" | "crowd" | "weather"
->("best");
+  const [errorType, setErrorType] = useState<ErrorType | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>("best");
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
 
-
-  async function handleSubmit(preferences: UserPreferences) {
+  async function fetchRecommendations(
+    prefs: UserPreferences,
+    sort: SortOption
+  ) {
+    const MIN_LOADING_MS = 600; // ensure skeleton visible for at least this duration
+    const start = Date.now();
     try {
       setLoading(true);
-      setError(null);
-        
-      const data = await getRecommendations(preferences);
+      setErrorType(null);
+      const data = await getRecommendations(prefs, sort);
+      const elapsed = Date.now() - start;
+      const remaining = Math.max(0, MIN_LOADING_MS - elapsed);
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
+      }
       setResults(data);
     } catch (err) {
-      setError("Failed to load recommendations");
+      if (err instanceof ApiError) {
+        setErrorType(err.type);
+      } else {
+        setErrorType("unknown_error");
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  const sortedResults = [...results].sort((a, b) => {
-    if (sortBy === "budget") {
-      return (b.score_breakdown.budget?.value ?? 0) -
-             (a.score_breakdown.budget?.value ?? 0);
-    }
+  async function handleSubmit(userPreferences: UserPreferences) {
+    setPreferences(userPreferences);
+    await fetchRecommendations(userPreferences, sortBy);
+  }
 
-    if (sortBy === "distance") {
-      return (b.score_breakdown.distance?.value ?? 0) -
-             (a.score_breakdown.distance?.value ?? 0);
+  // Refetch when sort changes
+  useEffect(() => {
+    if (preferences && results.length > 0) {
+      fetchRecommendations(preferences, sortBy);
     }
-
-    if (sortBy === "crowd") {
-      return (b.score_breakdown.crowd?.value ?? 0) -
-             (a.score_breakdown.crowd?.value ?? 0);
-    }
-
-    if (sortBy === "weather") {
-      return (b.score_breakdown.weather?.value ?? 0) -
-             (a.score_breakdown.weather?.value ?? 0);
-    }
-
-    // default: best match
-    return b.relevance_score - a.relevance_score;
-  });
+  }, [sortBy]);
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>AI Events Recommender</h1>
+    <div style={{
+      padding: "clamp(1rem, 5vw, 2rem)",
+      maxWidth: "900px",
+      margin: "0 auto"
+    }}>
+      <h1 style={{ marginTop: 0 }}>AI Events Recommender</h1>
 
       <PreferenceForm onSubmit={handleSubmit} />
 
@@ -68,50 +73,91 @@ export default function HomePage() {
 
       {loading && (
         <>
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
+          {[...Array(3)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </>
-    )}
-
-
-      {error && (
-        <div style={{ marginTop: 20, color: "#dc2626" }}>
-          <p>{error}</p>
-          <button
-            onClick={() => setError(null)}
-            style={{
-            marginTop: 8,
-            padding: "6px 12px",
-            background: "#2563EB",
-            color: "white",
-            border: "none",
-            borderRadius: 6,
-            cursor: "pointer",
-          }}
-        >
-            Try Again
-          </button>
-        </div>
       )}
 
 
-      {!loading && results.length === 0 && !error && (
-        <div style={{ marginTop: 30, textAlign: "center", color: "#6b7280" }}>
-          <h3>No events found 🎭</h3>
-          <p>Try adjusting your preferences.</p>
+
+      {errorType && (
+        (() => {
+          const info = errorMessageFor(errorType);
+          return (
+            <div style={{ marginTop: 20 }} role="alert" aria-live="assertive">
+              <div style={{ fontWeight: 600, color: "#111827" }}>{info.title}</div>
+              <div style={{ color: "#6b7280", marginTop: 6 }}>{info.message}</div>
+              <div style={{ marginTop: 8 }}>
+                <button
+                  onClick={() => {
+                    // retry last request
+                    if (preferences) {
+                      fetchRecommendations(preferences, sortBy);
+                    } else {
+                      setErrorType(null);
+                    }
+                  }}
+                  style={{
+                    marginTop: 8,
+                    padding: "6px 12px",
+                    background: "#2563EB",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                  }}
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          );
+        })()
+      )}
+
+      {!loading && results.length === 0 && !errorType && preferences && (
+        <div className="empty-state">
+          <div className="empty-state-content">
+            <div className="empty-state-icon">🎭</div>
+            <h2>No events found</h2>
+            <p className="empty-state-description">
+              We couldn't find any events matching your preferences. Try adjusting your criteria below to discover more events.
+            </p>
+            <ul className="empty-state-suggestions">
+              <li>Increase your budget range</li>
+              <li>Expand your genre preferences</li>
+              <li>Check nearby locations</li>
+              <li>Disable "Avoid crowds" filter</li>
+            </ul>
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              style={{
+                marginTop: 16,
+                padding: "10px 20px",
+                background: "#2563EB",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontSize: "1em",
+                fontWeight: 500,
+              }}
+            >
+              ↑ Modify Preferences
+            </button>
+          </div>
         </div>
       )}
 
-
-    <div>
-        {sortedResults.map((rec) => (
+      <div>
+        {results.map((rec) => (
             <RecommendationCard
                 key={rec.event?.id ?? Math.random()}
                 recommendation={rec}
             />
         ))}
-    </div>
+      </div>
 
 
     </div>

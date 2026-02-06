@@ -7,12 +7,23 @@ export default function SkeletonCard() {
         padding: 16,
         marginBottom: 16,
         border: "1px solid #e5e7eb",
-        animation: "pulse 1.5s infinite",
       }}
     >
-      <div style={{ height: 20, width: "60%", background: "#e5e7eb", marginBottom: 8 }} />
-      <div style={{ height: 14, width: "40%", background: "#e5e7eb", marginBottom: 12 }} />
-      <div style={{ height: 10, width: "100%", background: "#e5e7eb" }} />
+      {/* Title */}
+      <div className="skeleton skeleton-title" />
+
+      {/* Subtitle */}
+      <div className="skeleton skeleton-subtitle" />
+
+      {/* Match bar */}
+      <div className="skeleton skeleton-bar" />
+
+      {/* Badges */}
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <div className="skeleton skeleton-badge" />
+        <div className="skeleton skeleton-badge" />
+        <div className="skeleton skeleton-badge" />
+      </div>
     </div>
   );
 }
