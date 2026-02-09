@@ -21,6 +21,10 @@ export async function getRecommendations(
   const query = sortBy ? `?sort_by=${sortBy}` : "";
   const url = `${BASE_URL}/recommendations/${query}`;
 
+  if (preferences.max_distance_km) {
+    `&max_distance_km=${preferences.max_distance_km}`;
+  }
+
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     throw new ApiError("network_error", "Offline");
   }
@@ -30,7 +34,7 @@ export async function getRecommendations(
     resp = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ preferences }),
+      body: JSON.stringify({ user_id: 1, preferences }),
     });
   } catch (err) {
     // Network-level failures

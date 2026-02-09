@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { UserPreferences } from "../types/recommendation";
 
 interface PreferenceFormProps {
-  onSubmit: (preferences: UserPreferences) => void;
+  onSubmit: (preferences: UserPreferences ) => void;
 }
 
 export default function PreferenceForm({ onSubmit }: PreferenceFormProps) {
@@ -12,6 +12,8 @@ export default function PreferenceForm({ onSubmit }: PreferenceFormProps) {
   const [longitude, setLongitude] = useState("");
   const [foodPreference, setFoodPreference] = useState("");
   const [avoidCrowds, setAvoidCrowds] = useState(false);
+  const [maxDistanceKm, setMaxDistanceKm] = useState("");
+
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,6 +28,7 @@ export default function PreferenceForm({ onSubmit }: PreferenceFormProps) {
       longitude: Number(longitude),
       food_preference: foodPreference,
       avoid_crowds: avoidCrowds,
+      max_distance_km: maxDistanceKm ? parseFloat(maxDistanceKm) : undefined,
     };
 
     onSubmit(preferences);
@@ -88,6 +91,21 @@ export default function PreferenceForm({ onSubmit }: PreferenceFormProps) {
           style={{ width: "100%" }}
         />
       </div>
+
+      <div style={{ marginTop: 12 }}>
+        <label>Distance</label>
+        <select
+          value={maxDistanceKm}
+          onChange={(e) => setMaxDistanceKm(e.target.value)}
+          style={{ display: "block", marginTop: 4 }}
+        >
+          <option value="">Any distance</option>
+          <option value="5">Within 5 km</option>
+          <option value="20">Within 20 km</option>
+          <option value="50">Within 50 km</option>
+        </select>
+      </div>
+
 
       <label style={{ gridColumn: "span 1", display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <input

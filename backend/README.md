@@ -40,3 +40,4 @@ Estimates crowd level for an event based on interactions.
 - remove ridiculous suggestions
 - recommendations not interdependent
 - preferences should not allow any identifiers
+- events to be stored in db

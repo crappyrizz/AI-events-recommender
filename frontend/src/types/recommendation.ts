@@ -5,6 +5,7 @@ export interface UserPreferences {
   longitude: number;
   food_preference: string;
   avoid_crowds?: boolean;
+  max_distance_km?: number;
 }
 
 export interface ScoreDetail {
