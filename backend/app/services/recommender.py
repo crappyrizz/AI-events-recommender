@@ -120,9 +120,7 @@ class EventRecommender:
                 event['longitude']
             )
             
-            # Apply distance filter if specified
-            if max_distance_km is not None and distance > max_distance_km:
-                continue
+        
             
             relevance_score, score_breakdown = self.scoring_engine.calculate_relevance_score(
                 event,
@@ -180,8 +178,22 @@ class EventRecommender:
 
         else:
                 # default = best match
+            def distance_priority(distance):
+                if distance <= 50:
+                    return 0   # nearby
+                elif distance <= 200:
+                    return 1   # regional
+                else:
+                    return 2   # far
+
             recommendations.sort(
-                key=lambda x: (-x["relevance_score"], x["distance_km"])) 
+                key=lambda x: (
+                    distance_priority(x['distance_km']),
+                    -x['relevance_score'],
+                    x['distance_km']
+                )
+            )
+
             
 
         

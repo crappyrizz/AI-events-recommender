@@ -1,11 +1,11 @@
 from fastapi import FastAPI
-
 from app.core.database import Base, engine
 from app.models import event_interaction  # IMPORTANT (forces model import)
 from fastapi.middleware.cors import CORSMiddleware
-
-
 from app.api.v1 import interactions, crowd, recommendations
+from app.api.v1 import saved
+
+
 
 app = FastAPI(title = "AI Events Recommender")
 
@@ -24,3 +24,4 @@ Base.metadata.create_all(bind=engine)
 app.include_router(interactions.router)
 app.include_router(crowd.router)
 app.include_router(recommendations.router)
+app.include_router(saved.router)

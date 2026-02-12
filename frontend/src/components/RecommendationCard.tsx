@@ -5,6 +5,8 @@ import Badge from "./badge";
 import {budgetBadge, distanceBadge, crowdBadge, weatherBadge,} from "./utils/badges";
 import { useState } from "react";
 import { sendInteraction } from "../api/interactions";
+import { getSavedEvents, removeSaved} from "../api/saved";
+
 
 interface Props {
   recommendation: Recommendation;
@@ -12,12 +14,35 @@ interface Props {
 
 const USER_ID = 1;
 
+
+function distanceLabel(distance: number) {
+  if (distance == undefined) return "Distance unknown";
+  if (distance <= 50) return `${distance} km away`;
+  if (distance <= 200) return `${distance} km away (Regional)`;
+  return `${distance} km away (Far)`;
+}
+
+
+
 export default function RecommendationCard({ recommendation }: Props) {
   const { event, relevance_score, score_breakdown } = recommendation;
   const [expanded, setExpanded] = useState(false);
   const match = matchLabel(relevance_score);
+  const [saved, setSaved] = useState(false);
+
 
   // ✅ Handlers INSIDE component
+  async function toggleSave() {
+    if (saved) {
+      await removeSaved(event.id);
+      setSaved(false);
+    } else {
+      await getSavedEvents(event.id);
+      setSaved(true);
+    }
+  }
+
+
   async function markInterested() {
     await sendInteraction(USER_ID, event.id, "INTERESTED");
   }
@@ -42,9 +67,28 @@ export default function RecommendationCard({ recommendation }: Props) {
           {event.name}
         </h3>
 
+        <button
+          onClick={toggleSave}
+          style={{
+            marginTop: 8,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontSize: 18,
+          }}
+        >
+          {saved ? "❤️ Saved" : "🤍 Save"}
+        </button>
+
+
         <div style={{ fontSize: 14, color: "#6b7280" }}>
           {event.date} • {event.genre}
         </div>
+
+        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+          📍 {distanceLabel(recommendation.distance_km ?? 0)} {/* Fallback to 0 if distance_km is undefined */}
+        </div>
+
       </div>
 
       {/* MATCH */}

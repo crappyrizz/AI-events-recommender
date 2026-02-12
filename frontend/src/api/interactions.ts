@@ -2,7 +2,7 @@ const BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
 
 export async function sendInteraction(
   userId: number,
-  eventId: number,
+  eventId: string,
   interactionType: "INTERESTED" | "NOT_INTERESTED"
 ) {
   const resp = await fetch(`${BASE}/interactions/`, {

@@ -14,7 +14,7 @@ export interface ScoreDetail {
 }
 
 export interface EventSummary {
-  id: number;
+  id: string;
   name: string;
   date: string;
   genre?: string;
