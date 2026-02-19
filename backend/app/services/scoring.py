@@ -15,8 +15,8 @@ class ScoringEngine:
 
     # Weight configuration (sum = 1.0)
     WEIGHTS = {
-        "budget": 0.30,
-        "genre": 0.25,
+        "budget": 0.25,
+        "genre": 0.30,
         "distance": 0.20,
         "food_preference": 0.15,
         "temporal": 0.10,
