@@ -5,11 +5,14 @@ import Badge from "./badge";
 import {budgetBadge, distanceBadge, crowdBadge, weatherBadge,} from "./utils/badges";
 import { useState } from "react";
 import { sendInteraction } from "../api/interactions";
-import { getSavedEvents, removeSaved} from "../api/saved";
+import { saveEvent} from "../api/saved";
+import { useSaved } from "../context/SavedContext";
+
 
 
 interface Props {
   recommendation: Recommendation;
+  
 }
 
 const USER_ID = 1;
@@ -24,23 +27,38 @@ function distanceLabel(distance: number) {
 
 
 
-export default function RecommendationCard({ recommendation }: Props) {
+export default function RecommendationCard({ recommendation, }: Props) {
   const { event, relevance_score, score_breakdown } = recommendation;
   const [expanded, setExpanded] = useState(false);
   const match = matchLabel(relevance_score);
-  const [saved, setSaved] = useState(false);
+  const { savedIds,refreshSaved } = useSaved();
+  const [saving, setSaving] = useState(false);
+  const saved = savedIds.includes(event.id);
 
 
-  // ✅ Handlers INSIDE component
+  //  Handlers INSIDE component
   async function toggleSave() {
-    if (saved) {
-      await removeSaved(event.id);
-      setSaved(false);
-    } else {
-      await getSavedEvents(event.id);
-      setSaved(true);
+    if (saving || saved) return; // prevent double-click or re-saving
+
+    setSaving(true);
+
+    try {
+      await saveEvent(
+        USER_ID,
+        event.id,
+        event.name!,
+        event.date!,
+        event.genre!
+      );
+
+      await refreshSaved(); // update global state
+    } catch (error) {
+      console.error("Save failed:", error);
+    } finally {
+      setSaving(false);
     }
   }
+
 
 
   async function markInterested() {
@@ -68,17 +86,22 @@ export default function RecommendationCard({ recommendation }: Props) {
         </h3>
 
         <button
+          disabled={saving}
           onClick={toggleSave}
           style={{
-            marginTop: 8,
-            background: "none",
+            opacity: saving ? 0.6 : 1,
+            cursor: saving ? "not-allowed" : "pointer",
+            marginTop: 10,
+            padding: "6px 12px",
+            background: saved ? "#ef4444" : "#2563EB",
+            color: "white",
             border: "none",
-            cursor: "pointer",
-            fontSize: 18,
+            borderRadius: 6,
           }}
         >
-          {saved ? "❤️ Saved" : "🤍 Save"}
+          {saving ? "processing..." : saved ? "Saved" : "Save"}
         </button>
+
 
 
         <div style={{ fontSize: 14, color: "#6b7280" }}>

@@ -1,11 +1,11 @@
-const BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
+import { API_BASE_URL } from "./config";
 
 export async function sendInteraction(
   userId: number,
   eventId: string,
   interactionType: "INTERESTED" | "NOT_INTERESTED"
 ) {
-  const resp = await fetch(`${BASE}/interactions/`, {
+  const resp = await fetch(`${API_BASE_URL}/interactions/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

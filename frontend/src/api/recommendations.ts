@@ -1,5 +1,7 @@
 import type { UserPreferences, Recommendation } from "../types/recommendation";
 import type { ErrorType } from "../utils/errorMessages";
+import { API_BASE_URL } from "./config";
+
 
 export class ApiError extends Error {
   public type: ErrorType;
@@ -12,18 +14,17 @@ export class ApiError extends Error {
   }
 }
 
-const BASE_URL = "http://127.0.0.1:8000";
+
 
 export async function getRecommendations(
   preferences: UserPreferences,
   sortBy?: string
 ): Promise<Recommendation[]> {
   const query = sortBy ? `?sort_by=${sortBy}` : "";
-  const url = `${BASE_URL}/recommendations/${query}`;
+  const url = `${API_BASE_URL}/recommendations/${query}`;
 
-  if (preferences.max_distance_km) {
-    `&max_distance_km=${preferences.max_distance_km}`;
-  }
+
+  
 
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     throw new ApiError("network_error", "Offline");

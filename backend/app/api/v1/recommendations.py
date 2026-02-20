@@ -5,7 +5,7 @@ from fastapi import Query, Depends, APIRouter
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 
-router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
+router = APIRouter()
 
 @router.post("/")
 def get_recommendations(payload: RecommendationRequest, sort_by: str = Query(default="best"), max_distance_km: float | None = Query(None), db: Session = Depends(get_db), ):

@@ -20,6 +20,33 @@ export default function HomePage() {
   const [sortBy, setSortBy] = useState<SortOption>("best");
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
 
+
+// Restore previous session
+useEffect(() => {
+  const savedPrefs = localStorage.getItem("user_preferences");
+  const savedResults = localStorage.getItem("recommendations");
+
+  if (savedPrefs) {
+    const prefs = JSON.parse(savedPrefs);
+    setPreferences(prefs);
+
+    if (savedResults) {
+      setResults(JSON.parse(savedResults));
+    }
+  }
+}, []);
+
+function handleClear() {
+  setPreferences(null);
+  setResults([]);
+  setErrorType(null);
+
+  localStorage.removeItem("user_preferences");
+  localStorage.removeItem("recommendations");
+}
+
+
+
   async function fetchRecommendations(
     prefs: UserPreferences,
     sort: SortOption
@@ -36,6 +63,9 @@ export default function HomePage() {
         await new Promise((resolve) => setTimeout(resolve, remaining));
       }
       setResults(data);
+      // Persist session
+      localStorage.setItem("user_preferences", JSON.stringify(prefs));
+      localStorage.setItem("recommendations", JSON.stringify(data));
     } catch (err) {
       if (err instanceof ApiError) {
         setErrorType(err.type);
@@ -67,9 +97,28 @@ export default function HomePage() {
     }}>
       <h1 style={{ marginTop: 0 }}> Events Recommender</h1>
 
-      <PreferenceForm onSubmit={handleSubmit} />
+      <PreferenceForm 
+        onSubmit={handleSubmit}
+        initialValues={preferences ?? undefined}
+      />
 
       <SortControl value={sortBy} onChange={setSortBy} />
+
+      <div style={{ marginTop: 10 }}>
+        <button
+          onClick={handleClear}
+          style={{
+            padding: "6px 14px",
+            background: "#ef4444",
+            color: "white",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer"
+          }}
+        >
+          Clear Search
+        </button>
+      </div>
 
       {loading && (
         <>
@@ -151,10 +200,12 @@ export default function HomePage() {
       )}
 
       <div>
-        {results.map((rec) => (
+        {preferences && results.map((rec) => (
             <RecommendationCard
                 key={rec.event?.id ?? Math.random()}
                 recommendation={rec}
+                
+
             />
         ))}
       </div>

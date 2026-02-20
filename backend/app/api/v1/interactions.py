@@ -4,7 +4,7 @@ from app.core.database import get_db
 from app.schemas.interaction import EventInteractionCreate
 from app.services.interaction_service import log_interaction
 
-router = APIRouter(prefix="/interactions", tags=["Interactions"])
+router = APIRouter()
 
 
 @router.post("/")

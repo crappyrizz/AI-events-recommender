@@ -1,13 +1,60 @@
-const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+import { API_BASE_URL } from "./config";
 
-export async function getSavedEvents(): Promise<string[]> {
-  const res = await fetch(`${BASE}/saved/`);
-  if (!res.ok) throw new Error("Failed to load saved events");
-  return res.json();
-}
-
-export async function removeSaved(eventId: string) {
-  await fetch(`${BASE}/saved/${eventId}`, {
-    method: "DELETE",
+export const saveEvent = async (
+  userId: number,
+  eventId: string,
+  eventName: string,
+  eventDate: string,
+  eventGenre: string
+) => {
+  const resp = await fetch(`${API_BASE_URL}/saved-events/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      event_id: eventId,
+      event_name: eventName,
+      event_date: eventDate,
+      event_genre: eventGenre,
+    }),
   });
-}
+
+  if (!resp.ok) {
+    throw new Error("save_failed");
+  }
+
+  return resp.json();
+};
+
+
+export const unsaveEvent = async (
+  userId: number,
+  eventId: string
+) => {
+  const resp = await fetch(
+    `${API_BASE_URL}/saved-events/${userId}/${eventId}`,
+    { method: "DELETE" }
+  );
+
+  if (!resp.ok) {
+    throw new Error("unsave_failed");
+  }
+
+  return resp.json();
+};
+
+
+
+export const getSavedEvents = async (userId: number) => {
+  const resp = await fetch(
+    `${API_BASE_URL}/saved-events/${userId}`
+  );
+
+  if (!resp.ok) {
+    throw new Error("fetch_saved_failed");
+  }
+
+  return resp.json();
+};

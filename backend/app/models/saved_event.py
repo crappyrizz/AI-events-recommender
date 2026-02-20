@@ -9,4 +9,6 @@ class SavedEvent(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, index=True)
     event_id = Column(String, index=True)
-    saved_at = Column(DateTime, default=datetime.utcnow)
+    event_name = Column(String)
+    event_date = Column(String)
+    event_genre = Column(String)

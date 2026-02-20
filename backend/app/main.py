@@ -2,12 +2,16 @@ from fastapi import FastAPI
 from app.core.database import Base, engine
 from app.models import event_interaction  # IMPORTANT (forces model import)
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1 import interactions, crowd, recommendations
-from app.api.v1 import saved
+from app.api.v1 import interactions, crowd, recommendations, saved_events
+
+
+
+
 
 
 
 app = FastAPI(title = "AI Events Recommender")
+API_PREFIX = "/api/v1"
 
 # CORS middleware
 app.add_middleware(
@@ -21,7 +25,8 @@ app.add_middleware(
 # THIS CREATES THE TABLES
 Base.metadata.create_all(bind=engine)
 
-app.include_router(interactions.router)
-app.include_router(crowd.router)
-app.include_router(recommendations.router)
-app.include_router(saved.router)
+app.include_router(interactions.router, prefix=f"{API_PREFIX}/interactions", tags=["Interactions"])
+app.include_router(crowd.router, prefix=f"{API_PREFIX}/crowd", tags=["Crowd"])
+app.include_router(recommendations.router, prefix=f"{API_PREFIX}/recommendations", tags=["Recommendations"])
+app.include_router(saved_events.router, prefix=f"{API_PREFIX}/saved-events", tags=["Saved Events"])
+

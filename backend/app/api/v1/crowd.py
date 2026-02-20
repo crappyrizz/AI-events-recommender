@@ -4,10 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.crowd import CrowdEstimator
 
-router = APIRouter(
-    prefix="/crowd",
-    tags=["Crowd"],
-)
+router = APIRouter()
 
 
 @router.get("/{event_id}")

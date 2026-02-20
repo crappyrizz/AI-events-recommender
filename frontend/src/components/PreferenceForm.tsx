@@ -1,21 +1,41 @@
 import { useState } from "react";
 import type { UserPreferences } from "../types/recommendation";
+import { useEffect } from "react";
 
 interface PreferenceFormProps {
   onSubmit: (preferences: UserPreferences ) => void;
+  initialValues?: UserPreferences | null;
 }
 
-export default function PreferenceForm({ onSubmit }: PreferenceFormProps) {
-  const [budget, setBudget] = useState("");
-  const [genres, setGenres] = useState("");
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [foodPreference, setFoodPreference] = useState("");
-  const [avoidCrowds, setAvoidCrowds] = useState(false);
-  // const [maxDistanceKm, setMaxDistanceKm] = useState("");
+export default function PreferenceForm({ onSubmit, initialValues }: PreferenceFormProps) {
+  const [budget, setBudget] = useState(initialValues?.budget ?? "");
+  const [genres, setGenres] = useState(initialValues?.preferred_genres?.join(", ") ?? "");
+  const [latitude, setLatitude] = useState<number | null>(initialValues?.latitude ?? null);
+  const [longitude, setLongitude] = useState<number | null>(initialValues?.longitude ?? null);
+  const [foodPreference, setFoodPreference] = useState(initialValues?.food_preference ?? "");
+  const [avoidCrowds, setAvoidCrowds] = useState(initialValues?.avoid_crowds ?? false);
+  // UI state (these should NOT be restored)
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
+  useEffect(() => {
+  if (!initialValues) {
+    setBudget("");
+    setGenres("");
+    setLatitude(null);
+    setLongitude(null);
+    setFoodPreference("");
+    setAvoidCrowds(false);
+    return;
+  }
+
+  setBudget(initialValues.budget?.toString() ?? "");
+  setGenres(initialValues.preferred_genres?.join(", ") ?? "");
+  setLatitude(initialValues.latitude ?? null);
+  setLongitude(initialValues.longitude ?? null);
+  setFoodPreference(initialValues.food_preference ?? "");
+  setAvoidCrowds(initialValues.avoid_crowds ?? false);
+  }, [initialValues]);
 
 
   function detectLocation() {
