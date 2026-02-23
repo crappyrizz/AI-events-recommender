@@ -8,6 +8,7 @@ import SkeletonCard from "../components/SkeletonCard";
 import type { SortOption } from "../types/sorting";
 import { errorMessageFor } from "../utils/errorMessages";
 import type { ErrorType } from "../utils/errorMessages";
+import MapView from "../components/MapView";
 
 
 
@@ -19,6 +20,7 @@ export default function HomePage() {
   const [errorType, setErrorType] = useState<ErrorType | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("best");
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
 
 // Restore previous session
@@ -103,6 +105,43 @@ function handleClear() {
       />
 
       <SortControl value={sortBy} onChange={setSortBy} />
+
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          marginTop: 10,
+          marginBottom: 10,
+        }}
+      >
+        <button
+          onClick={() => setViewMode("list")}
+          style={{
+            padding: "6px 14px",
+            borderRadius: 6,
+            border: "none",
+            cursor: "pointer",
+            background: viewMode === "list" ? "#2563EB" : "#e5e7eb",
+            color: viewMode === "list" ? "white" : "#111827",
+          }}
+        >
+          List
+        </button>
+
+        <button
+          onClick={() => setViewMode("map")}
+          style={{
+            padding: "6px 14px",
+            borderRadius: 6,
+            border: "none",
+            cursor: "pointer",
+            background: viewMode === "map" ? "#2563EB" : "#e5e7eb",
+            color: viewMode === "map" ? "white" : "#111827",
+          }}
+        >
+          Map
+        </button>
+      </div>
 
       <div style={{ marginTop: 10 }}>
         <button
@@ -200,14 +239,23 @@ function handleClear() {
       )}
 
       <div>
-        {preferences && results.map((rec) => (
-            <RecommendationCard
-                key={rec.event?.id ?? Math.random()}
-                recommendation={rec}
-                
+        {preferences && results.length > 0 && (
+          <>
+            {/* Map View */}
+            {viewMode === "map" && (
+              <MapView recommendations={results} />
+            )}
 
-            />
-        ))}
+            {/* List View */}
+            {viewMode === "list" &&
+              results.map((rec) => (
+                <RecommendationCard
+                  key={rec.event.id}
+                  recommendation={rec}
+                />
+            ))}
+          </>
+        )}
       </div>
 
 

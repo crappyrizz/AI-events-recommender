@@ -1,12 +1,7 @@
 id,name,genre,ticket_price,latitude,longitude,food_type,date,description
-E001,Jazz Night at Blue Note,Music,45.00,-1.2833,36.8167,Cocktails,2026-02-02,Live jazz performance featuring local artists
-E002,Tech Conference 2024,Technology,120.00,37.7749,-122.4194,Vegan,2026-02-04,Annual tech conference with keynote speakers
-E003,Street Food Festival,Food,25.00,40.7580,-73.9855,International,2026-02-20,Street food vendors from around the world
-E004,Marathon City Run,Sports,35.00,40.7282,-73.7949,Healthy,2024-03-10,Annual city marathon event
-E005,Classical Music Gala,Music,85.00,40.7306,-73.9352,French Cuisine,2024-02-28,Symphony orchestra performance
-E006,Indie Film Festival,Movies,20.00,34.0522,-118.2437,Popcorn,2024-03-15,Showcase of independent films
-E007,Startup Networking Mixer,Technology,50.00,37.3382,-121.8863,Snacks,2024-02-22,Networking event for startup founders
-E008,Outdoor Cooking Class,Food,55.00,40.6892,-74.0445,BBQ,2024-03-05,Learn grilling techniques from professional chefs
-E009,Rock Concert Series,Music,65.00,41.8781,-87.6298,Pizza,2024-03-08,Top rock bands performing live
-E010,Science Exhibition,Technology,30.00,42.3601,-71.0589,Vegan,2024-02-25,Interactive science demonstrations and exhibits
-E011,Insuarance study,Education,15.00,40.7128,-74.0060,International,2024-03-12,Learn about the latest trends in insurance industry
+E001,Jazz Night at Blue Note,Music,45,-1.2833,36.8167,Cocktails,2026-02-02,Live jazz
+E002,Nairobi Tech Meetup,Technology,0,-1.2921,36.8219,Snacks,2026-02-05,Startup networking
+E003,Westlands Food Festival,Food,25,-1.2640,36.8030,International,2026-02-10,Street food
+E004,Karura Trail Run,Sports,10,-1.2345,36.8210,Healthy,2026-02-12,Trail running
+E005,KICC Business Expo,Business,30,-1.2921,36.8219,Buffet,2026-02-15,Business expo
+E006,Carnivore Live Band,Music,50,-1.3192,36.8156,BBQ,2026-02-18,Live music

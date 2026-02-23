@@ -147,6 +147,8 @@ class EventRecommender:
                         'name': event['name'],
                         'date': event['date'],
                         'genre': event.get('genre'),
+                        'latitude': event['latitude'],
+                        'longitude': event['longitude']
                     },
                     'relevance_score': round(relevance_score, 3),
                     'distance_km': round(distance, 1),

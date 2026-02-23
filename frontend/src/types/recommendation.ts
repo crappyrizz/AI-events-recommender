@@ -18,6 +18,8 @@ export interface EventSummary {
   name: string;
   date: string;
   genre?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Recommendation {
