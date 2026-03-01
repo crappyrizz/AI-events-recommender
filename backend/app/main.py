@@ -5,13 +5,14 @@ from app.core.database import Base, engine
 from app.models import event_interaction  # IMPORTANT (forces model import)
 from app.models.user import User
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1 import interactions, crowd, recommendations, saved_events
+from app.api.v1 import interactions, crowd, recommendations, saved_events, event_media
 from app.api.v1.auth import router as auth_router
-
+from fastapi.staticfiles import StaticFiles
 
 
 app = FastAPI(title = "AI Events Recommender")
 API_PREFIX = "/api/v1"
+app.mount("/media", StaticFiles(directory="media"), name="media")
 
 # CORS middleware
 app.add_middleware(
@@ -30,4 +31,5 @@ app.include_router(crowd.router, prefix=f"{API_PREFIX}/crowd", tags=["Crowd"])
 app.include_router(recommendations.router, prefix=f"{API_PREFIX}/recommendations", tags=["Recommendations"])
 app.include_router(saved_events.router, prefix=f"{API_PREFIX}/saved-events", tags=["Saved Events"])
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(event_media.router, prefix=f"{API_PREFIX}/media", tags=["Event Media"])
 

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { sendInteraction } from "../api/interactions";
 import { saveEvent} from "../api/saved";
 import { useSaved } from "../context/SavedContext";
+import EventMedia from "./EventMedia";
 // import { useUser } from "../context/UserContext";
 
 
@@ -224,6 +225,10 @@ export default function RecommendationCard({ recommendation, }: Props) {
             </div>
           ))}
         </div>
+      )}
+
+      {expanded && (
+        <EventMedia eventId={event.id} />
       )}
     </article>
   );
