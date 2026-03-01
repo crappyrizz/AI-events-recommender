@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getSavedEvents } from "../api/saved";
 
-const USER_ID = 1;
+
 
 interface SavedContextType {
   savedIds: string[];
@@ -17,7 +17,7 @@ export function SavedProvider({ children }: { children: React.ReactNode }) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
 
   async function refreshSaved() {
-    const events = await getSavedEvents(USER_ID);
+    const events = await getSavedEvents();
     setSavedIds(events.map((e: any) => e.event_id));
   }
 

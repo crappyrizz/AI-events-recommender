@@ -9,6 +9,7 @@ import type { SortOption } from "../types/sorting";
 import { errorMessageFor } from "../utils/errorMessages";
 import type { ErrorType } from "../utils/errorMessages";
 import MapView from "../components/MapView";
+// import UserSetup from "../components/UserSetup";
 
 
 
@@ -98,6 +99,16 @@ function handleClear() {
       margin: "0 auto"
     }}>
       <h1 style={{ marginTop: 0 }}> Events Recommender</h1>
+      <button
+        onClick={() => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user_id");
+          window.location.href = "/login";
+        }}
+      >
+        Logout
+      </button>
+      {/* <UserSetup /> */}
 
       <PreferenceForm 
         onSubmit={handleSubmit}

@@ -157,6 +157,11 @@ class EventRecommender:
                 }
 
                 recommendations.append(recommendation)
+                MIN_SCORE = 0.4
+                filtered = [r for r in recommendations if r["relevance_score"] >= MIN_SCORE]
+                return filtered
+                if not filtered:
+                    return []
         
         # Sort by relevance score (descending), then by distance (ascending - closest first)
         

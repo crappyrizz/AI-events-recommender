@@ -1,7 +1,7 @@
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL, authHeaders } from "./config";
+
 
 export const saveEvent = async (
-  userId: number,
   eventId: string,
   eventName: string,
   eventDate: string,
@@ -9,11 +9,8 @@ export const saveEvent = async (
 ) => {
   const resp = await fetch(`${API_BASE_URL}/saved-events/`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: authHeaders(),
     body: JSON.stringify({
-      user_id: userId,
       event_id: eventId,
       event_name: eventName,
       event_date: eventDate,
@@ -28,14 +25,13 @@ export const saveEvent = async (
   return resp.json();
 };
 
-
-export const unsaveEvent = async (
-  userId: number,
-  eventId: string
-) => {
+export const unsaveEvent = async (eventId: string) => {
   const resp = await fetch(
-    `${API_BASE_URL}/saved-events/${userId}/${eventId}`,
-    { method: "DELETE" }
+    `${API_BASE_URL}/saved-events/${eventId}`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    }
   );
 
   if (!resp.ok) {
@@ -45,12 +41,10 @@ export const unsaveEvent = async (
   return resp.json();
 };
 
-
-
-export const getSavedEvents = async (userId: number) => {
-  const resp = await fetch(
-    `${API_BASE_URL}/saved-events/${userId}`
-  );
+export const getSavedEvents = async () => {
+  const resp = await fetch(`${API_BASE_URL}/saved-events/`, {
+    headers: authHeaders(),
+  });
 
   if (!resp.ok) {
     throw new Error("fetch_saved_failed");

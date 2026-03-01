@@ -4,13 +4,17 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { SavedProvider } from "./context/SavedContext";
 import "leaflet/dist/leaflet.css";
+import { UserProvider } from "./context/UserContext";
+
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <SavedProvider>
-        <App />
-      </SavedProvider>
+      <UserProvider>
+        <SavedProvider>
+          <App/>
+        </SavedProvider>
+      </UserProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { getSavedEvents, unsaveEvent } from "../api/saved";
 import { useSaved } from "../context/SavedContext";
+// import { useUser } from "../context/UserContext";
 
-const USER_ID = 1;
+
+
 
 interface SavedEvent {
   id: number;
@@ -15,6 +17,7 @@ interface SavedEvent {
 export default function SavedPage() {
   const [events, setEvents] = useState<SavedEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  
 
   // Only what we need from context
   const { refreshSaved } = useSaved();
@@ -23,7 +26,7 @@ export default function SavedPage() {
   async function loadSaved() {
     setLoading(true);
     try {
-      const data = await getSavedEvents(USER_ID);
+      const data = await getSavedEvents();
       setEvents(data);
     } catch (error) {
       console.error("Failed to load saved events", error);
@@ -39,7 +42,8 @@ export default function SavedPage() {
   // Remove event
   async function handleRemove(eventId: string) {
     try {
-      await unsaveEvent(USER_ID, eventId);
+    
+        await unsaveEvent(eventId);
 
       // Refresh this page
       setEvents((prev) =>

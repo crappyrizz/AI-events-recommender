@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.schemas.interaction import EventInteractionCreate
 from app.services.interaction_service import log_interaction
+from app.core.dependancies import get_current_user_id
 
 router = APIRouter()
 
@@ -11,6 +12,7 @@ router = APIRouter()
 def create_interaction(
     interaction: EventInteractionCreate,
     db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
 ):
     return log_interaction(
         db=db,

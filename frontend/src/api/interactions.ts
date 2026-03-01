@@ -1,15 +1,13 @@
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL, authHeaders } from "./config";
 
 export async function sendInteraction(
-  userId: number,
   eventId: string,
   interactionType: "INTERESTED" | "NOT_INTERESTED"
 ) {
   const resp = await fetch(`${API_BASE_URL}/interactions/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify({
-      user_id: userId,
       event_id: eventId,
       interaction_type: interactionType,
     }),

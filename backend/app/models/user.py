@@ -1,28 +1,10 @@
-"""
-User data model.
-"""
-
-from dataclasses import dataclass
-from typing import List, Optional
+from sqlalchemy import Column, Integer, String
+from app.core.database import Base
 
 
-@dataclass
-class User:
-    """Represents a user with preferences for event recommendations."""
-    id: str
-    name: str
-    budget: float
-    preferred_genres: List[str]
-    latitude: float
-    longitude: float
-    food_preference: str
-    
-    def to_preferences_dict(self) -> dict:
-        """Convert user to preferences dictionary for recommendation engine."""
-        return {
-            'budget': self.budget,
-            'preferred_genres': self.preferred_genres,
-            'latitude': self.latitude,
-            'longitude': self.longitude,
-            'food_preference': self.food_preference
-        }
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)

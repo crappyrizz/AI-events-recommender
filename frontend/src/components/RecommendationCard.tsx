@@ -7,6 +7,7 @@ import { useState } from "react";
 import { sendInteraction } from "../api/interactions";
 import { saveEvent} from "../api/saved";
 import { useSaved } from "../context/SavedContext";
+// import { useUser } from "../context/UserContext";
 
 
 
@@ -15,7 +16,7 @@ interface Props {
   
 }
 
-const USER_ID = 1;
+
 
 
 function distanceLabel(distance: number) {
@@ -28,6 +29,7 @@ function distanceLabel(distance: number) {
 
 
 export default function RecommendationCard({ recommendation, }: Props) {
+  
   const { event, relevance_score, score_breakdown } = recommendation;
   const [expanded, setExpanded] = useState(false);
   const match = matchLabel(relevance_score);
@@ -44,7 +46,6 @@ export default function RecommendationCard({ recommendation, }: Props) {
 
     try {
       await saveEvent(
-        USER_ID,
         event.id,
         event.name!,
         event.date!,
@@ -62,11 +63,11 @@ export default function RecommendationCard({ recommendation, }: Props) {
 
 
   async function markInterested() {
-    await sendInteraction(USER_ID, event.id, "INTERESTED");
+    await sendInteraction(event.id, "INTERESTED");
   }
 
   async function markNotInterested() {
-    await sendInteraction(USER_ID, event.id, "NOT_INTERESTED");
+    await sendInteraction(event.id, "NOT_INTERESTED");
   }
 
   return (

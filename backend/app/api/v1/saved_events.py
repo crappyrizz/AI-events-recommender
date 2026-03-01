@@ -3,15 +3,14 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.saved_event import SavedEvent
 from pydantic import BaseModel
+from app.core.dependancies import get_current_user_id
 router = APIRouter()
 
 
-# Temporary user (until auth exists)
-USER_ID = 1
+
 
 
 class SaveEventRequest(BaseModel):
-    user_id: int
     event_id: str
     event_name: str
     event_date: str
@@ -20,12 +19,13 @@ class SaveEventRequest(BaseModel):
 @router.post("/")
 def save_event(
     data: SaveEventRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
 ):
     existing = (
         db.query(SavedEvent)
         .filter(
-            SavedEvent.user_id == data.user_id,
+            SavedEvent.user_id == user_id,
             SavedEvent.event_id == data.event_id
         )
         .first()
@@ -35,7 +35,7 @@ def save_event(
         return {"message": "Already saved"}
 
     saved = SavedEvent(
-        user_id=data.user_id,
+        user_id=user_id,
         event_id=data.event_id,
         event_name=data.event_name,
         event_date=data.event_date,
@@ -47,8 +47,11 @@ def save_event(
 
     return {"message": "Event saved"}
 
-@router.get("/{user_id}")
-def get_saved_events(user_id: int, db: Session = Depends(get_db)):
+@router.get("/")
+def get_saved_events(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
     events = (
         db.query(SavedEvent)
         .filter(SavedEvent.user_id == user_id)
@@ -59,8 +62,12 @@ def get_saved_events(user_id: int, db: Session = Depends(get_db)):
 
 
 
-@router.delete("/{user_id}/{event_id}")
-def unsave_event(user_id: int, event_id: str, db: Session = Depends(get_db)):
+@router.delete("/{event_id}")
+def unsave_event(
+    event_id: str,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
     event = (
         db.query(SavedEvent)
         .filter(
