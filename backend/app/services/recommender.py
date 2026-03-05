@@ -1,67 +1,24 @@
 """
 Content-based event recommendation engine.
-Loads events from CSV and ranks them using weighted relevance scoring.
+Loads events from PostgreSQL and ranks them using weighted relevance scoring.
 """
 
-import csv
-import os
 from typing import List, Dict
-from pathlib import Path
 
 from app.services.scoring import ScoringEngine
-from app.services.context.temporal import TemporalContextService
-from app.services.context.weather import WeatherContextService
-from app.services.context.crowd import CrowdContextService
 from app.services.learning.user_profile import UserPreferenceProfile
 
 
 class EventRecommender:
     """Recommends events based on user preferences using content-based scoring."""
 
-    def __init__(self, events_csv_path: str, db=None):
+    def __init__(self, db=None):
         """
-        Initialize the recommender with event data.
-
         Args:
-            events_csv_path: Path to the events CSV file (used as fallback label only).
-            db: Optional database session for user profile loading.
+            db: SQLAlchemy session. Required for loading events and user profiles.
         """
-        self.events_csv_path = events_csv_path
         self.db = db
         self.scoring_engine = ScoringEngine()
-        self.events = []
-        self._load_events()
-
-    # ------------------------------------------------------------------
-    # Data loading
-    # ------------------------------------------------------------------
-
-    def _load_events(self) -> None:
-        """Load and normalise events from the CSV file."""
-        base_dir = Path(__file__).resolve().parent.parent
-        csv_path = base_dir / "data" / "events_seed.csv"
-
-        if not os.path.exists(csv_path):
-            raise FileNotFoundError(f"Events CSV file not found: {csv_path}")
-
-        self.events = []
-        with open(csv_path, "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                event = {
-                    "id": row["id"],
-                    "name": row["name"],
-                    "genre": row["genre"],
-                    "ticket_price": float(row["ticket_price"]),
-                    "latitude": float(row["latitude"]),
-                    "longitude": float(row["longitude"]),
-                    "food_type": row.get("food_type", ""),
-                    "date": row["date"],
-                    "description": row.get("description", ""),
-                    "event_type": row.get("event_type", "indoor"),
-                    "crowd_level": row.get("crowd_level", "MEDIUM"),
-                }
-                self.events.append(event)
 
     # ------------------------------------------------------------------
     # Public API
@@ -85,16 +42,23 @@ class EventRecommender:
             user_id: Optional — loads personalisation profile when provided.
             sort_by: "best" | "distance" | "budget" | "crowd"
             top_n: Maximum number of results to return.
-            max_distance_km: Hard distance cap (None = no cap).
-            weights: Override scoring weights (defaults to ScoringEngine.WEIGHTS).
+            max_distance_km: Hard distance cap in km (None = no cap).
+            weights: Override scoring weights.
 
         Returns:
-            List of recommendation dicts, each containing event, relevance_score,
+            List of recommendation dicts with event, relevance_score,
             distance_km, explanation, and score_breakdown.
         """
         from app.utils.distance import haversine_distance
+        from app.models.event import Event
 
-        # Optionally load user preference profile
+        # --- Load events from DB ---
+        events = self.db.query(Event).all()
+
+        if not events:
+            return []
+
+        # --- Optionally load user profile ---
         profile = None
         if user_id and self.db:
             try:
@@ -104,29 +68,46 @@ class EventRecommender:
 
         recommendations = []
 
-        for event in self.events:
+        for event in events:
+            # Skip events with missing location
+            if event.latitude is None or event.longitude is None:
+                continue
+
             distance = haversine_distance(
                 user_preferences["latitude"],
                 user_preferences["longitude"],
-                event["latitude"],
-                event["longitude"],
+                event.latitude,
+                event.longitude,
             )
 
             # Hard distance cap
             if max_distance_km is not None and distance > max_distance_km:
                 continue
 
+            # Convert Event model to dict for scoring engine
+            event_dict = {
+                "id":           event.id,
+                "name":         event.name,
+                "genre":        event.genre or "",
+                "ticket_price": event.ticket_price or 0.0,
+                "latitude":     event.latitude,
+                "longitude":    event.longitude,
+                "food_type":    event.food_type or "",
+                "date":         event.date or "",
+                "event_type":   event.event_type or "indoor",
+                "crowd_level":  event.crowd_level or "MEDIUM",
+                "description":  event.description or "",
+            }
+
             relevance_score, score_breakdown = self.scoring_engine.calculate_relevance_score(
-                event, user_preferences, weights=weights
+                event_dict, user_preferences, weights=weights
             )
 
             # --- Personalisation adjustments ---
             if profile:
-                # Genre bias
-                genre_bias = profile.genre_bias.get(event["genre"], 0)
+                genre_bias = profile.genre_bias.get(event.genre, 0)
                 relevance_score += genre_bias * 0.05
 
-                # Crowd bias — only when crowd data is present
                 if "crowd" in score_breakdown:
                     relevance_score += profile.crowd_bias
 
@@ -134,27 +115,43 @@ class EventRecommender:
                 explanation = self._generate_explanation(score_breakdown, relevance_score)
                 recommendations.append({
                     "event": {
-                        "id": event["id"],
-                        "name": event["name"],
-                        "date": event["date"],
-                        "genre": event.get("genre"),
-                        "latitude": event["latitude"],
-                        "longitude": event["longitude"],
+                        "id":        event.id,
+                        "name":      event.name,
+                        "date":      event.date,
+                        "genre":     event.genre,
+                        "latitude":  event.latitude,
+                        "longitude": event.longitude,
+                        "media": {
+                            "poster_url":    event.poster_url,
+                            "thumbnail_url": event.thumbnail_url,
+                        },
+                        "ticketing": {
+                            "price":      event.ticket_price,
+                            "is_free":    event.is_free,
+                            "ticket_url": event.ticket_url,
+                            "currency":   event.currency,
+                        },
+                        "location": {
+                            "venue_name": event.venue_name,
+                            "address":    event.address,
+                            "city":       event.city,
+                        },
+                        "is_verified": event.is_verified,
                     },
                     "relevance_score": round(relevance_score, 3),
-                    "distance_km": round(distance, 1),
-                    "explanation": explanation,
+                    "distance_km":     round(distance, 1),
+                    "explanation":     explanation,
                     "score_breakdown": score_breakdown,
                 })
 
-        # --- Minimum score filter (applied once, after loop) ---
+        # --- Minimum score filter ---
         MIN_SCORE = 0.4
         recommendations = [r for r in recommendations if r["relevance_score"] >= MIN_SCORE]
 
         if not recommendations:
             return []
 
-        # --- Sorting ---
+        # --- Sort ---
         recommendations = self._sort(recommendations, sort_by)
 
         return recommendations[:top_n]
@@ -165,8 +162,6 @@ class EventRecommender:
 
     @staticmethod
     def _sort(recommendations: List[Dict], sort_by: str) -> List[Dict]:
-        """Sort recommendations according to the requested strategy."""
-
         if sort_by == "distance":
             return sorted(recommendations, key=lambda x: x["distance_km"])
 
@@ -184,7 +179,7 @@ class EventRecommender:
                 reverse=True,
             )
 
-        # Default: "best" — tiered by distance band, then by score
+        # Default: "best" — tiered by distance band then score
         def distance_tier(distance: float) -> int:
             if distance <= 50:
                 return 0
@@ -202,35 +197,23 @@ class EventRecommender:
         )
 
     # ------------------------------------------------------------------
-    # Explanation generation
+    # Explanation
     # ------------------------------------------------------------------
 
     def _generate_explanation(self, score_breakdown: dict, total_score: float) -> str:
-        """
-        Build a human-readable explanation highlighting the top 3 scoring factors.
-
-        Args:
-            score_breakdown: Per-factor score data from the scoring engine.
-            total_score: Overall weighted relevance score.
-
-        Returns:
-            Pipe-separated string of top factor descriptions.
-        """
         weights = ScoringEngine.WEIGHTS
 
         contributions = [
             {
-                "factor": factor,
+                "factor":       factor,
                 "contribution": data["value"] * weights.get(factor, 0),
-                "description": data["description"],
+                "description":  data["description"],
             }
             for factor, data in score_breakdown.items()
         ]
 
         contributions.sort(key=lambda x: x["contribution"], reverse=True)
-        top_factors = contributions[:3]
-
-        return " | ".join(f["description"] for f in top_factors)
+        return " | ".join(f["description"] for f in contributions[:3])
 
     # ------------------------------------------------------------------
     # Static helpers
@@ -238,7 +221,6 @@ class EventRecommender:
 
     @staticmethod
     def apply_crowd_modifier(score: float, crowd_level: str, avoid_crowds: bool) -> float:
-        """Apply a crowd penalty to a score when the user prefers low-crowd events."""
         if not avoid_crowds:
             return score
         if crowd_level == "HIGH":

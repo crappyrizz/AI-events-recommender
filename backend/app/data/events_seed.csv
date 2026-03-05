@@ -1,7 +1,7 @@
 id,name,genre,ticket_price,latitude,longitude,food_type,date,description
-E001,Jazz Night at Blue Note,Music,45,-1.2833,36.8167,Cocktails,2026-02-02,Live jazz
-E002,Nairobi Tech Meetup,Technology,0,-1.2921,36.8219,Snacks,2026-02-05,Startup networking
-E003,Westlands Food Festival,Food,25,-1.2640,36.8030,International,2026-02-10,Street food
-E004,Karura Trail Run,Sports,10,-1.2345,36.8210,Healthy,2026-02-12,Trail running
-E005,KICC Business Expo,Business,30,-1.2921,36.8219,Buffet,2026-02-15,Business expo
-E006,Carnivore Live Band,Music,50,-1.3192,36.8156,BBQ,2026-02-18,Live music
+E001,Jazz Night at Blue Note,Music,45,-1.2833,36.8167,Cocktails,2026-03-06,Live jazz
+E002,Nairobi Tech Meetup,Technology,0,-1.2921,36.8219,Snacks,2026-05-14,Startup networking
+E003,Westlands Food Festival,Food,25,-1.2640,36.8030,International,2026-07-22,Street food
+E004,Karura Trail Run,Sports,10,-1.2345,36.8210,Healthy,2026-09-05,Trail running
+E005,KICC Business Expo,Business,30,-1.2921,36.8219,Buffet,2026-11-12,Business expo
+E006,Carnivore Live Band,Music,50,-1.3192,36.8156,BBQ,2026-12-20,Live music

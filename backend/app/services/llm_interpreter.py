@@ -8,7 +8,7 @@ import json
 import re
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "llama3"
+MODEL = "qwen2.5:1.5b"
 
 SYSTEM_PROMPT = """You are a JSON-only data extraction engine. You never write sentences or explanations.
 
@@ -81,7 +81,7 @@ def interpret_with_llm(message: str) -> dict:
 
     try:
         print(f"[LLM] Sending query: {message}")
-        response = requests.post(OLLAMA_URL, json=payload, timeout=120)
+        response = requests.post(OLLAMA_URL, json=payload, timeout=30)
         response.raise_for_status()
 
         raw = response.json()
