@@ -1,3 +1,4 @@
+# app an api later, but this is the core logic for weather context scoring.
 class WeatherContextService:
     """
     Provides weather-based contextual relevance.

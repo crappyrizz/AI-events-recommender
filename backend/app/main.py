@@ -2,28 +2,28 @@ from dotenv import load_dotenv
 load_dotenv()
 from fastapi import FastAPI
 from app.core.database import Base, engine
-from app.models import event_interaction  # IMPORTANT (forces model import)
+from app.models import event_interaction  # forces model registration
 from app.models.user import User
+from app.models.event import Event        # NEW — registers events table
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1 import interactions, crowd, recommendations, saved_events, event_media
+from app.api.v1 import interactions, crowd, recommendations, saved_events, event_media, chat
 from app.api.v1.auth import router as auth_router
 from fastapi.staticfiles import StaticFiles
 
 
-app = FastAPI(title = "AI Events Recommender")
+app = FastAPI(title="AI Events Recommender")
 API_PREFIX = "/api/v1"
 app.mount("/media", StaticFiles(directory="media"), name="media")
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
     allow_credentials=True,
-    allow_methods=["*"],   # IMPORTANT (allows OPTIONS)
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# THIS CREATES THE TABLES
+# Creates all tables that have been registered via Base
 Base.metadata.create_all(bind=engine)
 
 app.include_router(interactions.router, prefix=f"{API_PREFIX}/interactions", tags=["Interactions"])
@@ -32,4 +32,4 @@ app.include_router(recommendations.router, prefix=f"{API_PREFIX}/recommendations
 app.include_router(saved_events.router, prefix=f"{API_PREFIX}/saved-events", tags=["Saved Events"])
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(event_media.router, prefix=f"{API_PREFIX}/media", tags=["Event Media"])
-
+app.include_router(chat.router, prefix=f"{API_PREFIX}/chat", tags=["Chat"])
