@@ -1,4 +1,4 @@
-import type { UserPreferences, Recommendation } from "../types/recommendation";
+import type { UserPreferences, Recommendation, RecommendationsResponse } from "../types/recommendation";
 import type { ErrorType } from "../utils/errorMessages";
 import { API_BASE_URL } from "./config";
 
@@ -15,16 +15,12 @@ export class ApiError extends Error {
 }
 
 
-
 export async function getRecommendations(
   preferences: UserPreferences,
   sortBy?: string
 ): Promise<Recommendation[]> {
   const query = sortBy ? `?sort_by=${sortBy}` : "";
   const url = `${API_BASE_URL}/recommendations/${query}`;
-
-
-  
 
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     throw new ApiError("network_error", "Offline");
@@ -38,22 +34,16 @@ export async function getRecommendations(
       body: JSON.stringify({ user_id: 1, preferences }),
     });
   } catch (err) {
-    // Network-level failures
     throw new ApiError("network_error", (err as Error)?.message ?? "Network error");
   }
 
   if (!resp.ok) {
-    if (resp.status === 400) {
-      throw new ApiError("validation_error", "Invalid request", 400);
-    }
-
-    if (resp.status >= 500) {
-      throw new ApiError("server_error", "Server error", resp.status);
-    }
-
+    if (resp.status === 400) throw new ApiError("validation_error", "Invalid request", 400);
+    if (resp.status >= 500) throw new ApiError("server_error", "Server error", resp.status);
     throw new ApiError("unknown_error", `HTTP ${resp.status}`, resp.status);
   }
 
-  const data = (await resp.json()) as Recommendation[];
-  return data;
+  // Backend returns { results: [...], message?: string }
+  const data = (await resp.json()) as RecommendationsResponse;
+  return data.results ?? [];
 }

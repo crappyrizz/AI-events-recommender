@@ -1,111 +1,155 @@
 import { useEffect, useState } from "react";
 import { getSavedEvents, unsaveEvent } from "../api/saved";
 import { useSaved } from "../context/SavedContext";
-// import { useUser } from "../context/UserContext";
+import { API_BASE_URL, authHeaders } from "../api/config";
 
-
-
-
-interface SavedEvent {
+interface SavedEventRecord {
   id: number;
   event_id: string;
-  event_name: string;
-  event_date: string;
-  event_genre: string;
+  saved_at?: string;
 }
 
-export default function SavedPage() {
-  const [events, setEvents] = useState<SavedEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  
+interface EventDetail {
+  id: string;
+  name: string;
+  date?: string;
+  genre?: string;
+  location?: { venue_name?: string; city?: string; };
+  ticketing?: { price: number; is_free: boolean; currency: string; ticket_url?: string; };
+  media?: { poster_url?: string; };
+}
 
-  // Only what we need from context
+const GENRE_EMOJI: Record<string, string> = {
+  Music: "🎵", Tech: "💻", Food: "🍽", Sports: "⚽",
+  Travel: "✈️", Business: "💼", Arts: "🎨", Nightlife: "🌙",
+  Education: "📚", Wellness: "🧘", Culture: "🌍",
+};
+
+export default function SavedPage() {
+  const [savedRecords, setSavedRecords] = useState<SavedEventRecord[]>([]);
+  const [eventDetails, setEventDetails] = useState<Record<string, EventDetail>>({});
+  const [loading, setLoading] = useState(true);
   const { refreshSaved } = useSaved();
 
-  // Load saved events
   async function loadSaved() {
     setLoading(true);
     try {
       const data = await getSavedEvents();
-      setEvents(data);
-    } catch (error) {
-      console.error("Failed to load saved events", error);
+      setSavedRecords(data);
+    } catch (err) {
+      console.error("Failed to load saved events", err);
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadSaved();
-  }, []);
+  async function loadEventDetails(records: SavedEventRecord[]) {
+    const details: Record<string, EventDetail> = {};
+    await Promise.all(
+      records.map(async (record) => {
+        try {
+          const resp = await fetch(`${API_BASE_URL}/events/${record.event_id}`, {
+            headers: authHeaders(),
+          });
+          if (resp.ok) details[record.event_id] = await resp.json();
+        } catch {}
+      })
+    );
+    setEventDetails(details);
+  }
 
-  // Remove event
+  useEffect(() => { loadSaved(); }, []);
+  useEffect(() => { if (savedRecords.length > 0) loadEventDetails(savedRecords); }, [savedRecords]);
+
   async function handleRemove(eventId: string) {
     try {
-    
-        await unsaveEvent(eventId);
-
-      // Refresh this page
-      setEvents((prev) =>
-        prev.filter((e) => e.event_id !== eventId)
-      );
-
-      // Sync Home / Recommendation cards
+      await unsaveEvent(eventId);
+      setSavedRecords((prev) => prev.filter((e) => e.event_id !== eventId));
       await refreshSaved();
-    } catch (error) {
-      console.error("Failed to remove event", error);
+    } catch (err) {
+      console.error("Failed to remove event", err);
     }
   }
 
   if (loading) {
-    return <div style={{ padding: 20 }}>Loading saved events...</div>;
+    return (
+      <div className="saved-page">
+        <h2>Saved Events</h2>
+        <p style={{ color: "#4A5568" }}>Loading...</p>
+      </div>
+    );
   }
 
-  if (events.length === 0) {
+  if (savedRecords.length === 0) {
     return (
-      <div style={{ padding: 20 }}>
-        <h2>No saved events yet</h2>
-        <p>Save events from the Home page to see them here.</p>
+      <div className="saved-page">
+        <h2>Saved Events</h2>
+        <div className="empty-state-content" style={{ marginTop: "2rem" }}>
+          <div className="empty-state-icon">🎭</div>
+          <h3>Nothing saved yet</h3>
+          <p className="empty-state-description">
+            Save events from the Discover page to find them here later.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "2rem", maxWidth: 800, margin: "0 auto" }}>
-      <h2>Saved Events</h2>
+    <div className="saved-page">
+      <h2>Saved Events ({savedRecords.length})</h2>
 
-      {events.map((event) => (
-        <div
-          key={event.event_id}
-          style={{
-            border: "1px solid #e5e7eb",
-            borderRadius: 10,
-            padding: 16,
-            marginTop: 12,
-            background: "#fff",
-          }}
-        >
-          <h3 style={{ margin: 0 }}>{event.event_name}</h3>
-          <div style={{ color: "#6b7280", fontSize: 14 }}>
-            {event.event_date} • {event.event_genre}
+      {savedRecords.map((record) => {
+        const detail = eventDetails[record.event_id];
+        const emoji = GENRE_EMOJI[detail?.genre ?? ""] ?? "🎭";
+
+        return (
+          <div key={record.event_id} className="saved-card">
+            {detail?.media?.poster_url ? (
+              <img src={detail.media.poster_url} alt={detail.name} className="saved-card-poster" />
+            ) : (
+              <div style={{
+                height: 80,
+                background: "linear-gradient(135deg, #0F1923 0%, #1e3a4a 100%)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "1.8rem",
+              }}>
+                {emoji}
+              </div>
+            )}
+
+            <div className="saved-card-body">
+              <div className="saved-card-name">
+                {detail?.name ?? `Event ${record.event_id.slice(0, 8)}...`}
+              </div>
+
+              <div className="saved-card-meta">
+                {detail?.date ?? "Date unknown"}
+                {detail?.genre ? ` · ${detail.genre}` : ""}
+                {detail?.location?.venue_name ? ` · ${detail.location.venue_name}` : ""}
+                {detail?.location?.city ? `, ${detail.location.city}` : ""}
+              </div>
+
+              {detail?.ticketing && (
+                <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#C1440E", marginBottom: 8 }}>
+                  {detail.ticketing.is_free ? "🎟 Free" : `🎟 ${detail.ticketing.currency} ${detail.ticketing.price}`}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 8 }}>
+                {detail?.ticketing?.ticket_url && (
+                  <a href={detail.ticketing.ticket_url} target="_blank" rel="noopener noreferrer" className="btn-ticket">
+                    Get Tickets →
+                  </a>
+                )}
+                <button className="btn-remove" onClick={() => handleRemove(record.event_id)}>
+                  Remove
+                </button>
+              </div>
+            </div>
           </div>
-
-          <button
-            onClick={() => handleRemove(event.event_id)}
-            style={{
-              marginTop: 10,
-              padding: "6px 12px",
-              background: "#ef4444",
-              color: "white",
-              border: "none",
-              borderRadius: 6,
-              cursor: "pointer",
-            }}
-          >
-            Remove
-          </button>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

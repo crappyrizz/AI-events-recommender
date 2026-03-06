@@ -5,6 +5,7 @@ import App from "./App";
 import { SavedProvider } from "./context/SavedContext";
 import "leaflet/dist/leaflet.css";
 import { UserProvider } from "./context/UserContext";
+import './index.css'
 
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

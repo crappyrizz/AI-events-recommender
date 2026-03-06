@@ -14,29 +14,27 @@ export default function PreferenceForm({ onSubmit, initialValues }: PreferenceFo
   const [longitude, setLongitude] = useState<number | null>(initialValues?.longitude ?? null);
   const [foodPreference, setFoodPreference] = useState(initialValues?.food_preference ?? "");
   const [avoidCrowds, setAvoidCrowds] = useState(initialValues?.avoid_crowds ?? false);
-  // UI state (these should NOT be restored)
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
   useEffect(() => {
-  if (!initialValues) {
-    setBudget("");
-    setGenres("");
-    setLatitude(null);
-    setLongitude(null);
-    setFoodPreference("");
-    setAvoidCrowds(false);
-    return;
-  }
+    if (!initialValues) {
+      setBudget("");
+      setGenres("");
+      setLatitude(null);
+      setLongitude(null);
+      setFoodPreference("");
+      setAvoidCrowds(false);
+      return;
+    }
 
-  setBudget(initialValues.budget?.toString() ?? "");
-  setGenres(initialValues.preferred_genres?.join(", ") ?? "");
-  setLatitude(initialValues.latitude ?? null);
-  setLongitude(initialValues.longitude ?? null);
-  setFoodPreference(initialValues.food_preference ?? "");
-  setAvoidCrowds(initialValues.avoid_crowds ?? false);
+    setBudget(initialValues.budget?.toString() ?? "");
+    setGenres(initialValues.preferred_genres?.join(", ") ?? "");
+    setLatitude(initialValues.latitude ?? null);
+    setLongitude(initialValues.longitude ?? null);
+    setFoodPreference(initialValues.food_preference ?? "");
+    setAvoidCrowds(initialValues.avoid_crowds ?? false);
   }, [initialValues]);
-
 
   function detectLocation() {
     if (!navigator.geolocation) {
@@ -64,8 +62,6 @@ export default function PreferenceForm({ onSubmit, initialValues }: PreferenceFo
     );
   }
 
-
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -79,78 +75,64 @@ export default function PreferenceForm({ onSubmit, initialValues }: PreferenceFo
       longitude: longitude ?? 0,
       food_preference: foodPreference,
       avoid_crowds: avoidCrowds,
-      // max_distance_km: maxDistanceKm ? parseFloat(maxDistanceKm) : undefined,
     };
 
     onSubmit(preferences);
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginBottom: "2rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-      <div style={{ gridColumn: "span 1" }}>
+    <form onSubmit={handleSubmit} className="pref-form">
+
+      <div>
         <input
           type="number"
-          placeholder="Budget"
+          placeholder="Budget (KES)"
           value={budget}
           onChange={(e) => setBudget(e.target.value)}
           required
-          style={{ width: "100%" }}
+          className="pref-input"
         />
       </div>
 
-      <div style={{ gridColumn: "span 1" }}>
+      <div>
         <input
           type="text"
-          placeholder="Preferred genres (comma separated)"
+          placeholder="Genres e.g. Music, Tech, Food"
           value={genres}
           onChange={(e) => setGenres(e.target.value)}
           required
-          style={{ width: "100%" }}
+          className="pref-input"
         />
       </div>
-
 
       <div style={{ gridColumn: "span 2" }}>
         <button
           type="button"
           onClick={detectLocation}
           disabled={locating}
-          style={{
-            padding: "8px 12px",
-            background: "#2563EB",
-            color: "white",
-            border: "none",
-            borderRadius: 6,
-            cursor: "pointer",
-            width: "100%",
-          }}
+          className="pref-loc-btn"
         >
-          {locating ? "Detecting location..." : "📍 Use my current location"}
+          {locating ? "⏳ Detecting location..." : "📍 Use my current location"}
         </button>
 
         {locationError && (
-          <div style={{ color: "red", marginTop: 6 }}>
+          <div className="auth-error" style={{ marginTop: 8 }}>
             {locationError}
           </div>
         )}
       </div>
 
-
-
-      <div style={{ gridColumn: "span 1" }}>
+      <div>
         <input
           type="text"
           placeholder="Food preference"
           value={foodPreference}
           onChange={(e) => setFoodPreference(e.target.value)}
-          style={{ width: "100%" }}
+          className="pref-input"
         />
       </div>
 
-
-
-
-      <label style={{ gridColumn: "span 1", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.95rem", color: "var(--urban)" }}>
         <input
           type="checkbox"
           checked={avoidCrowds}
@@ -160,15 +142,22 @@ export default function PreferenceForm({ onSubmit, initialValues }: PreferenceFo
       </label>
 
       {latitude === null && (
-        <div style={{ color: "#ef4444", fontSize: 14 }}>
-          Please use your location before getting recommendations.
+        <div className="auth-error" style={{ gridColumn: "span 2" }}>
+          Please detect your location before submitting.
         </div>
       )}
 
-
-      <div style={{ gridColumn: "span 1" }}>
-        <button type="submit" disabled={latitude === null} style={{ width: "100%" }}>Get recommendations</button>
+      <div style={{ gridColumn: "span 2" }}>
+        <button
+          type="submit"
+          disabled={latitude === null}
+          className="pref-btn"
+          style={{ width: "100%" }}
+        >
+          Get Recommendations
+        </button>
       </div>
+
     </form>
   );
 }

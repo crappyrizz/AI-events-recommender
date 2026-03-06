@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from app.services.scrapers.scheduler import start_scheduler, stop_scheduler, trigger_manual_scrape
 from app.services.genre_classifier import GenreClassifier
 
+
 app = FastAPI(title="AI Events Recommender")
 API_PREFIX = "/api/v1"
 app.mount("/media", StaticFiles(directory="media"), name="media")
@@ -92,6 +93,15 @@ def _warmup_llm():
         print("[LLM] Model warmed up and ready.")
     except Exception as e:
         print(f"[LLM] Warmup failed (Ollama may not be running): {e}")
+        
+
+@app.get("/api/v1/events/{event_id}", tags=["Events"])
+def get_event(event_id: str, db: Session = Depends(get_db)):
+    event = db.query(Event).filter_by(id=event_id).first()
+    if not event:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event.to_dict()
 
 # ------------------------------------------------------------------
 # Routers

@@ -1,67 +1,154 @@
-// import { useState } from "react";
-// import { sendChat } from "../api/chat";
+import { useState, useRef, useEffect } from "react";
+import { sendChat } from "../api/chat";
+import type { ChatResponse } from "../types/recommendation";
 
-// interface Event {
-//   id: string;
-//   name: string;
-//   date: string;
-//   genre: string;
-// }
+interface Props {
+  onResults: (response: ChatResponse) => void;
+  onLoading: (loading: boolean) => void;
+}
 
-// export default function ChatBox() {
-//   const [message, setMessage] = useState("");
-//   const [results, setResults] = useState<Event[]>([]);
-//   const [loading, setLoading] = useState(false);
+const SUGGESTIONS = [
+  "Free music events this weekend",
+  "Tech meetups in Nairobi under KES 500",
+  "Outdoor sports events near me",
+  "Food festivals happening soon",
+  "Comedy shows this month",
+  "Business networking events",
+];
 
-//   async function handleSend() {
-//     if (!message) return;
+export default function ChatBox({ onResults, onLoading }: Props) {
+  const [message, setMessage] = useState("");
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [history, setHistory] = useState<{ role: "user" | "bot"; text: string }[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
 
-//     setLoading(true);
+  // Auto-detect location silently on mount
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+      },
+      () => setLocating(false),
+      { timeout: 8000 }
+    );
+  }, []);
 
-//     try {
-//       const data = await sendChat(message);
-//       setResults(data);
-//     } catch (err) {
-//       console.error("Chat failed", err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
+  // Scroll chat history to bottom
+  useEffect(() => {
+    if (historyRef.current) {
+      historyRef.current.scrollTop = historyRef.current.scrollHeight;
+    }
+  }, [history]);
 
-//   return (
-//     <div style={{ marginTop: 20 }}>
-//       <h3>Ask about events</h3>
+  async function handleSend(text?: string) {
+    const query = (text ?? message).trim();
+    if (!query) return;
 
-//       <div style={{ display: "flex", gap: 8 }}>
-//         <input
-//           value={message}
-//           onChange={(e) => setMessage(e.target.value)}
-//           placeholder="e.g. free tech events in Nairobi"
-//           style={{ flex: 1, padding: 8 }}
-//         />
-//         <button onClick={handleSend}>Send</button>
-//       </div>
+    setMessage("");
+    setError(null);
+    setHistory((prev) => [...prev, { role: "user", text: query }]);
+    onLoading(true);
 
-//       {loading && <p>Searching events...</p>}
+    try {
+      const response = await sendChat(
+        query,
+        userLocation?.lat ?? null,
+        userLocation?.lng ?? null
+      );
 
-//       <div style={{ marginTop: 10 }}>
-//         {results.map((event) => (
-//           <div
-//             key={event.id}
-//             style={{
-//               border: "1px solid #e5e7eb",
-//               padding: 10,
-//               borderRadius: 8,
-//               marginBottom: 6,
-//             }}
-//           >
-//             <strong>{event.name}</strong>
-//             <div style={{ fontSize: 14 }}>
-//               {event.date} • {event.genre}
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }
+      if (response.needs_clarification && response.question) {
+        setHistory((prev) => [...prev, { role: "bot", text: response.question! }]);
+      } else {
+        const count = response.results?.length ?? 0;
+        const botMsg = count > 0
+          ? `Found ${count} event${count !== 1 ? "s" : ""} matching your search.`
+          : "No events found matching that. Try different keywords or broaden your search.";
+        setHistory((prev) => [...prev, { role: "bot", text: botMsg }]);
+        onResults(response);
+      }
+    } catch (err: any) {
+      const msg = "Something went wrong. Please try again.";
+      setError(msg);
+      setHistory((prev) => [...prev, { role: "bot", text: msg }]);
+    } finally {
+      onLoading(false);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
+  return (
+    <div className="chatbox-wrapper">
+      {/* Location indicator */}
+      <div className="chatbox-location">
+        {locating ? (
+          <span className="loc-detecting">⟳ Detecting location...</span>
+        ) : userLocation ? (
+          <span className="loc-found">📍 Location detected</span>
+        ) : (
+          <span className="loc-missing">📍 Location unavailable — results near Nairobi</span>
+        )}
+      </div>
+
+      {/* Chat history */}
+      {history.length > 0 && (
+        <div className="chatbox-history" ref={historyRef}>
+          {history.map((msg, i) => (
+            <div key={i} className={`chat-bubble chat-bubble--${msg.role}`}>
+              {msg.text}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Suggestions */}
+      {history.length === 0 && (
+        <div className="chatbox-suggestions">
+          {SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              className="suggestion-chip"
+              onClick={() => handleSend(s)}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="chatbox-input-row">
+        <input
+          ref={inputRef}
+          className="chatbox-input"
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="e.g. cheap music events near me this weekend..."
+          autoComplete="off"
+        />
+        <button
+          className="chatbox-send"
+          onClick={() => handleSend()}
+          disabled={!message.trim()}
+        >
+          ↑
+        </button>
+      </div>
+
+      {error && <div className="chatbox-error">{error}</div>}
+    </div>
+  );
+}

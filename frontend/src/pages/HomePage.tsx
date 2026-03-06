@@ -1,277 +1,215 @@
 import { useState, useEffect } from "react";
+import ChatBox from "../components/ChatBox";
+import RecommendationCard from "../components/RecommendationCard";
+import SkeletonCard from "../components/SkeletonCard";
+import SortControl from "../components/SortControl";
+import MapView from "../components/MapView";
 import PreferenceForm from "../components/PreferenceForm";
 import { getRecommendations, ApiError } from "../api/recommendations";
-import type { Recommendation, UserPreferences } from "../types/recommendation";
-import RecommendationCard from "../components/RecommendationCard";
-import SortControl from "../components/SortControl";
-import SkeletonCard from "../components/SkeletonCard";
+import type { Recommendation, ChatResponse, UserPreferences } from "../types/recommendation";
 import type { SortOption } from "../types/sorting";
-import { errorMessageFor } from "../utils/errorMessages";
 import type { ErrorType } from "../utils/errorMessages";
-import MapView from "../components/MapView";
-// import ChatBox from "../components/ChatBox";
-// import UserSetup from "../components/UserSetup";
-
-
-
-
+import { errorMessageFor } from "../utils/errorMessages";
 
 export default function HomePage() {
   const [results, setResults] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorType, setErrorType] = useState<ErrorType | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("best");
-  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [locationWarning, setLocationWarning] = useState<string | null>(null);
+  const [resultCount, setResultCount] = useState<number | null>(null);
 
-
-// Restore previous session
-useEffect(() => {
-  const savedPrefs = localStorage.getItem("user_preferences");
-  const savedResults = localStorage.getItem("recommendations");
-
-  if (savedPrefs) {
-    const prefs = JSON.parse(savedPrefs);
-    setPreferences(prefs);
-
+  // Restore previous session
+  useEffect(() => {
+    const savedResults = localStorage.getItem("recommendations");
     if (savedResults) {
-      setResults(JSON.parse(savedResults));
+      const parsed = JSON.parse(savedResults);
+      setResults(parsed);
+      setResultCount(parsed.length);
     }
+  }, []);
+
+  function handleChatResults(response: ChatResponse) {
+    const recs = response.results ?? [];
+    setResults(recs);
+    setResultCount(recs.length);
+    setLocationWarning(response.location_warning ?? null);
+    setErrorType(null);
+    localStorage.setItem("recommendations", JSON.stringify(recs));
   }
-}, []);
 
-function handleClear() {
-  setPreferences(null);
-  setResults([]);
-  setErrorType(null);
+  function handleClear() {
+    setResults([]);
+    setResultCount(null);
+    setErrorType(null);
+    setLocationWarning(null);
+    setPreferences(null);
+    localStorage.removeItem("recommendations");
+    localStorage.removeItem("user_preferences");
+  }
 
-  localStorage.removeItem("user_preferences");
-  localStorage.removeItem("recommendations");
-}
-
-
-
-  async function fetchRecommendations(
-    prefs: UserPreferences,
-    sort: SortOption
-  ) {
-    const MIN_LOADING_MS = 600; // ensure skeleton visible for at least this duration
-    const start = Date.now();
+  // Advanced form submit
+  async function handleAdvancedSubmit(prefs: UserPreferences) {
+    setPreferences(prefs);
+    setLoading(true);
+    setErrorType(null);
     try {
-      setLoading(true);
-      setErrorType(null);
-      const data = await getRecommendations(prefs, sort);
-      const elapsed = Date.now() - start;
-      const remaining = Math.max(0, MIN_LOADING_MS - elapsed);
-      if (remaining > 0) {
-        await new Promise((resolve) => setTimeout(resolve, remaining));
-      }
+      const data = await getRecommendations(prefs, sortBy);
       setResults(data);
-      // Persist session
-      localStorage.setItem("user_preferences", JSON.stringify(prefs));
+      setResultCount(data.length);
       localStorage.setItem("recommendations", JSON.stringify(data));
+      localStorage.setItem("user_preferences", JSON.stringify(prefs));
+      setShowAdvanced(false);
     } catch (err) {
-      if (err instanceof ApiError) {
-        setErrorType(err.type);
-      } else {
-        setErrorType("unknown_error");
-      }
+      if (err instanceof ApiError) setErrorType(err.type);
+      else setErrorType("unknown_error");
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleSubmit(userPreferences: UserPreferences) {
-    setPreferences(userPreferences);
-    await fetchRecommendations(userPreferences, sortBy);
-  }
-
-  // Refetch when sort changes
+  // Re-sort when sort changes
   useEffect(() => {
     if (preferences && results.length > 0) {
-      fetchRecommendations(preferences, sortBy);
+      handleAdvancedSubmit(preferences);
     }
   }, [sortBy]);
 
   return (
-    <div style={{
-      padding: "clamp(1rem, 5vw, 2rem)",
-      maxWidth: "900px",
-      margin: "0 auto"
-    }}>
-      <h1 style={{ marginTop: 0 }}> Events Recommender</h1>
-      {/* <ChatBox /> */}
-      <button
-        onClick={() => {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user_id");
-          window.location.href = "/login";
-        }}
-      >
-        Logout
-      </button>
-      {/* <UserSetup /> */}
+    <div className="home-page">
 
-      <PreferenceForm 
-        onSubmit={handleSubmit}
-        initialValues={preferences ?? undefined}
-      />
-
-      <SortControl value={sortBy} onChange={setSortBy} />
-
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          marginTop: 10,
-          marginBottom: 10,
-        }}
-      >
-        <button
-          onClick={() => setViewMode("list")}
-          style={{
-            padding: "6px 14px",
-            borderRadius: 6,
-            border: "none",
-            cursor: "pointer",
-            background: viewMode === "list" ? "#2563EB" : "#e5e7eb",
-            color: viewMode === "list" ? "white" : "#111827",
-          }}
-        >
-          List
-        </button>
-
-        <button
-          onClick={() => setViewMode("map")}
-          style={{
-            padding: "6px 14px",
-            borderRadius: 6,
-            border: "none",
-            cursor: "pointer",
-            background: viewMode === "map" ? "#2563EB" : "#e5e7eb",
-            color: viewMode === "map" ? "white" : "#111827",
-          }}
-        >
-          Map
-        </button>
+      {/* HERO */}
+      <div className="hero">
+        <div className="hero-content">
+          <h1 className="hero-title">
+            Discover Kenya's<br />
+            <span className="hero-accent">Best Events</span>
+          </h1>
+          <p className="hero-subtitle">
+            Tell us what you're looking for — we'll find the perfect match.
+          </p>
+        </div>
       </div>
 
-      <div style={{ marginTop: 10 }}>
+      {/* CHAT SECTION */}
+      <div className="chat-section">
+        <ChatBox
+          onResults={handleChatResults}
+          onLoading={setLoading}
+        />
+
+        {/* Advanced filters toggle */}
         <button
-          onClick={handleClear}
-          style={{
-            padding: "6px 14px",
-            background: "#ef4444",
-            color: "white",
-            border: "none",
-            borderRadius: 6,
-            cursor: "pointer"
-          }}
+          className="advanced-toggle"
+          onClick={() => setShowAdvanced((v) => !v)}
         >
-          Clear Search
+          {showAdvanced ? "▲ Hide advanced filters" : "▼ Advanced filters"}
         </button>
+
+        {showAdvanced && (
+          <div className="advanced-panel">
+            <PreferenceForm
+              onSubmit={handleAdvancedSubmit}
+              initialValues={preferences}
+            />
+          </div>
+        )}
       </div>
 
-      {loading && (
-        <>
-          {[...Array(3)].map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </>
-      )}
+      {/* RESULTS HEADER */}
+      {(results.length > 0 || loading) && (
+        <div className="results-header">
+          <div className="results-meta">
+            {resultCount !== null && !loading && (
+              <span className="results-count">
+                {resultCount} event{resultCount !== 1 ? "s" : ""} found
+              </span>
+            )}
+            {locationWarning && (
+              <span className="location-warning">⚠ {locationWarning}</span>
+            )}
+          </div>
 
+          <div className="results-controls">
+            <SortControl value={sortBy} onChange={setSortBy} />
 
-
-      {errorType && (
-        (() => {
-          const info = errorMessageFor(errorType);
-          return (
-            <div style={{ marginTop: 20 }} role="alert" aria-live="assertive">
-              <div style={{ fontWeight: 600, color: "#111827" }}>{info.title}</div>
-              <div style={{ color: "#6b7280", marginTop: 6 }}>{info.message}</div>
-              <div style={{ marginTop: 8 }}>
-                <button
-                  onClick={() => {
-                    // retry last request
-                    if (preferences) {
-                      fetchRecommendations(preferences, sortBy);
-                    } else {
-                      setErrorType(null);
-                    }
-                  }}
-                  style={{
-                    marginTop: 8,
-                    padding: "6px 12px",
-                    background: "#2563EB",
-                    color: "white",
-                    border: "none",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                  }}
-                >
-                  Try Again
-                </button>
-              </div>
+            <div className="view-toggle">
+              <button
+                className={`view-btn ${viewMode === "list" ? "active" : ""}`}
+                onClick={() => setViewMode("list")}
+              >
+                ☰ List
+              </button>
+              <button
+                className={`view-btn ${viewMode === "map" ? "active" : ""}`}
+                onClick={() => setViewMode("map")}
+              >
+                🗺 Map
+              </button>
             </div>
-          );
-        })()
-      )}
 
-      {!loading && results.length === 0 && !errorType && preferences && (
-        <div className="empty-state">
-          <div className="empty-state-content">
-            <div className="empty-state-icon">🎭</div>
-            <h2>No events found</h2>
-            <p className="empty-state-description">
-              We couldn't find any events matching your preferences. Try adjusting your criteria below to discover more events.
-            </p>
-            <ul className="empty-state-suggestions">
-              <li>Increase your budget range</li>
-              <li>Expand your genre preferences</li>
-              <li>Check nearby locations</li>
-              <li>Disable "Avoid crowds" filter</li>
-            </ul>
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              style={{
-                marginTop: 16,
-                padding: "10px 20px",
-                background: "#2563EB",
-                color: "white",
-                border: "none",
-                borderRadius: 6,
-                cursor: "pointer",
-                fontSize: "1em",
-                fontWeight: 500,
-              }}
-            >
-              ↑ Modify Preferences
+            <button className="clear-btn" onClick={handleClear}>
+              ✕ Clear
             </button>
           </div>
         </div>
       )}
 
-      <div>
-        {preferences && results.length > 0 && (
-          <>
-            {/* Map View */}
-            {viewMode === "map" && (
-              <MapView recommendations={results} />
-            )}
+      {/* ERROR */}
+      {errorType && (() => {
+        const info = errorMessageFor(errorType);
+        return (
+          <div className="error-banner" role="alert">
+            <strong>{info.title}</strong>
+            <p>{info.message}</p>
+            <button
+              onClick={() => preferences
+                ? handleAdvancedSubmit(preferences)
+                : setErrorType(null)
+              }
+            >
+              Try Again
+            </button>
+          </div>
+        );
+      })()}
 
-            {/* List View */}
-            {viewMode === "list" &&
-              results.map((rec) => (
-                <RecommendationCard
-                  key={rec.event.id}
-                  recommendation={rec}
-                />
-            ))}
+      {/* RESULTS */}
+      <div className="results-section">
+        {loading && (
+          <div className="results-list">
+            {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        )}
+
+        {!loading && results.length === 0 && resultCount !== null && (
+          <div className="empty-state">
+            <div className="empty-state-content">
+              <div className="empty-state-icon">🎭</div>
+              <h2>No events found</h2>
+              <p className="empty-state-description">
+                Try different keywords, a higher budget, or a different location.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!loading && results.length > 0 && (
+          <>
+            {viewMode === "map" && <MapView recommendations={results} />}
+            {viewMode === "list" && (
+              <div className="results-list">
+                {results.map((rec) => (
+                  <RecommendationCard key={rec.event.id} recommendation={rec} />
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
-
-
     </div>
   );
 }

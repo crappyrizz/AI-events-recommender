@@ -143,6 +143,7 @@ export default function MapView({ recommendations }: Props) {
       zoom={12}
       ref={mapRef}
       style={{ height: "400px", width: "100%", marginTop: 20 }} 
+      className="map-container"
       
     >
       <MapClickHandler onMapClick={clearRoute} />
