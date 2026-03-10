@@ -14,13 +14,13 @@ class ScoringEngine:
 
     # Default weights — must roughly sum to 1.0
     WEIGHTS = {
-        "budget": 0.25,
-        "genre": 0.30,
-        "distance": 0.20,
-        "food_preference": 0.15,
-        "temporal": 0.10,
-        "weather": 0.08,
-        "crowd": 0.06,
+        "budget":          0.20,
+        "genre":           0.40,  # ← up from 0.30
+        "distance":        0.20,
+        "food_preference": 0.08,  # ← down from 0.15
+        "temporal":        0.07,  # ← down from 0.10
+        "weather":         0.03,  # ← down from 0.08
+        "crowd":           0.02,  # ← down from 0.06
     }
 
     def calculate_relevance_score(
@@ -137,6 +137,7 @@ class ScoringEngine:
         )
 
         return relevance_score, score_breakdown
+    
 
     # ------------------------------------------------------------------
     # Individual scoring methods

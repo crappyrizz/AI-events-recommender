@@ -1,20 +1,15 @@
-from fastapi import APIRouter, Depends,HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.saved_event import SavedEvent
+from app.models.event import Event
 from pydantic import BaseModel
 from app.core.dependancies import get_current_user_id
+
 router = APIRouter()
-
-
-
-
 
 class SaveEventRequest(BaseModel):
     event_id: str
-    event_name: str
-    event_date: str
-    event_genre: str
 
 @router.post("/")
 def save_event(
@@ -36,10 +31,7 @@ def save_event(
 
     saved = SavedEvent(
         user_id=user_id,
-        event_id=data.event_id,
-        event_name=data.event_name,
-        event_date=data.event_date,
-        event_genre=data.event_genre
+        event_id=data.event_id  # ← removed old fields
     )
 
     db.add(saved)
@@ -52,15 +44,24 @@ def get_saved_events(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id)
 ):
-    events = (
+    saved = (
         db.query(SavedEvent)
         .filter(SavedEvent.user_id == user_id)
+        .order_by(SavedEvent.saved_at.desc())
         .all()
     )
 
-    return events
+    results = []
+    for s in saved:
+        event = db.query(Event).filter(Event.id == s.event_id).first()
+        results.append({
+            "id": s.id,
+            "event_id": s.event_id,
+            "saved_at": s.saved_at,
+            "event": event.to_dict() if event else None
+        })
 
-
+    return results
 
 @router.delete("/{event_id}")
 def unsave_event(
@@ -84,7 +85,3 @@ def unsave_event(
     db.commit()
 
     return {"message": "Removed"}
-
-
-
-

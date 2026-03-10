@@ -15,10 +15,13 @@ Usage:
     events = scraper.scrape()
 """
 
+from os import name
 import re
 import logging
 from datetime import datetime, timezone
 from typing import Optional
+import requests
+from bs4 import BeautifulSoup
 
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
@@ -150,6 +153,18 @@ class AlleventsScraper:
             for i in range(SCROLL_PAUSES):
                 page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                 page.wait_for_timeout(SCROLL_WAIT_MS)
+                
+                # Wait for lazy-loaded images to inject into the DOM
+            try:
+                page.wait_for_selector("li.event-card div.banner-cont img", timeout=8000)
+            except:
+                pass  # Some pages may have no images — continue anyway
+            
+            # Scroll back to top so all cards are in view, triggering any
+            # remaining lazy loaders that only fire when elements are visible
+            page.evaluate("window.scrollTo(0, 0)")
+            page.wait_for_timeout(1500)
+
 
             # Read all rendered event cards
             cards = page.query_selector_all("li.event-card")
@@ -157,7 +172,7 @@ class AlleventsScraper:
 
             for card in cards:
                 try:
-                    event = self._parse_card(card, city_name, city_lat, city_lng)
+                    event = self._parse_card(card, page, city_name, city_lat, city_lng)
                     if event:
                         events.append(event)
                 except Exception as e:
@@ -179,12 +194,20 @@ class AlleventsScraper:
     def _parse_card(
         self,
         card,
+        page,
         city_name: str,
         city_lat: float,
         city_lng: float,
     ) -> Optional[dict]:
         """
         Extract event data from a single <li class="event-card"> element.
+
+        Args:
+            card: Playwright element handle for the event card
+            page: Playwright page instance for JS evaluation
+            city_name: Human readable city name e.g. "Nairobi"
+            city_lat: City center latitude for distance scoring
+            city_lng: City center longitude for distance scoring
 
         HTML structure (mapped by inspecting allevents.in/nairobi):
 
@@ -220,10 +243,47 @@ class AlleventsScraper:
 
         # --- Poster image ---
         # Allevents uses data-src for lazy loading
+        
+        # Try multiple selectors in order of specificity
         poster_url = None
-        img = card.query_selector("div.banner-cont img.banner-img")
+        img = (
+            card.query_selector("div.banner-cont img.banner-img") or
+            card.query_selector("div.banner-cont img") or
+            card.query_selector("img.banner-img") or
+            card.query_selector("div.event-img img") or
+            card.query_selector("img[data-src]") or
+            card.query_selector("img")
+        )
         if img:
-            poster_url = img.get_attribute("data-src") or img.get_attribute("src")
+            poster_url = (
+                img.get_attribute("data-src") or
+                img.get_attribute("data-lazy-src") or
+                img.get_attribute("data-original") or
+                img.get_attribute("src")
+            )
+
+        # Clean up — reject base64 placeholders and empty strings
+        if poster_url and (poster_url.startswith("data:") or poster_url.strip() == ""):
+            poster_url = None
+            
+        
+
+
+        # Fallback — grab og:image from event detail page via HTTP (fast, no browser)
+        if not poster_url and source_url:
+            try:
+                resp = requests.get(source_url, timeout=8, headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                })
+                if resp.status_code == 200:
+                    soup = BeautifulSoup(resp.text, "html.parser")
+                    og = soup.find("meta", property="og:image")
+                    if og and og.get("content"):
+                        poster_url = og["content"]
+            except Exception:
+                pass    
+        
+        
 
         # --- Event name (required) ---
         name = None
@@ -232,6 +292,20 @@ class AlleventsScraper:
             name = name_el.inner_text().strip()
         if not name:
             return None
+        
+        if not poster_url:
+            all_imgs = card.query_selector_all("img")
+            print(f"[DEBUG] No image for '{name}' — found {len(all_imgs)} img tags")
+            banner = card.query_selector("div.banner-cont")
+            if banner:
+                style = banner.get_attribute("style")
+                bg_style = page.evaluate("el => window.getComputedStyle(el).backgroundImage", banner)
+                print(f"  banner style attr: {style}")
+                print(f"  banner computed bg: {bg_style[:100] if bg_style else None}")
+            for i, debug_img in enumerate(all_imgs):
+                print(f"  img[{i}] src={debug_img.get_attribute('src')[:80] if debug_img.get_attribute('src') else None}")
+                print(f"  img[{i}] data-src={debug_img.get_attribute('data-src')[:80] if debug_img.get_attribute('data-src') else None}")
+                print(f"  img[{i}] class={debug_img.get_attribute('class')}")
 
         # --- Venue ---
         venue_name = None

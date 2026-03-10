@@ -23,7 +23,7 @@ app.mount("/media", StaticFiles(directory="media"), name="media")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -94,6 +94,11 @@ def _warmup_llm():
     except Exception as e:
         print(f"[LLM] Warmup failed (Ollama may not be running): {e}")
         
+@app.get("/api/v1/events/")
+def list_events(limit: int = 20, db: Session = Depends(get_db)):
+    events = db.query(Event).limit(limit).all()
+    return [e.to_dict() for e in events]
+
 
 @app.get("/api/v1/events/{event_id}", tags=["Events"])
 def get_event(event_id: str, db: Session = Depends(get_db)):

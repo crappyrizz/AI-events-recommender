@@ -143,9 +143,17 @@ class EventRecommender:
                     "explanation":     explanation,
                     "score_breakdown": score_breakdown,
                 })
+                
+                # --- Genre filter — drop mismatches when user specified genres ---
+        preferred_genres = user_preferences.get("preferred_genres", [])
+        if preferred_genres:
+            recommendations = [
+                r for r in recommendations
+                if r["score_breakdown"]["genre"]["value"] > 0
+            ]
 
         # --- Minimum score filter ---
-        MIN_SCORE = 0.4
+        MIN_SCORE = 0.3
         recommendations = [r for r in recommendations if r["relevance_score"] >= MIN_SCORE]
 
         if not recommendations:

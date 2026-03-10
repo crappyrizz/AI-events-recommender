@@ -26,8 +26,8 @@ class Event(Base):
     # ------------------------------------------------------------------
     # Media
     # ------------------------------------------------------------------
-    poster_url    = Column(String(500), nullable=True)  # main event poster
-    thumbnail_url = Column(String(500), nullable=True)  # smaller card image
+    poster_url    = Column(String(2000), nullable=True)  # main event poster
+    thumbnail_url = Column(String(2000), nullable=True)  # smaller card image
     gallery_urls  = Column(JSON, nullable=True)         # list of extra image URLs
 
     # ------------------------------------------------------------------
@@ -36,7 +36,7 @@ class Event(Base):
     ticket_price_min = Column(Float, nullable=True)
     ticket_price_max = Column(Float, nullable=True)
     ticket_price     = Column(Float, nullable=True)     # kept for recommender compatibility
-    ticket_url       = Column(String(500), nullable=True)
+    ticket_url       = Column(String(2000), nullable=True)
     is_free          = Column(Boolean, default=False, nullable=False)
     currency         = Column(String(10), default="KES", nullable=False)
 
@@ -68,7 +68,7 @@ class Event(Base):
     # Scraper metadata
     # ------------------------------------------------------------------
     source            = Column(String(50),  nullable=False, default="manual")
-    source_url        = Column(String(500), nullable=True, unique=True)
+    source_url        = Column(String(2000), nullable=True, unique=True)
     scraped_at        = Column(DateTime(timezone=True), nullable=True)
     last_refreshed_at = Column(DateTime(timezone=True), nullable=True)
     is_verified       = Column(Boolean, default=False)
